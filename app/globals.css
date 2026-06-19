@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.625rem;
+
+  /* Dark, calm Linear/Notion aesthetic */
+  --background: oklch(0.16 0.004 264);
+  --foreground: oklch(0.96 0.003 264);
+
+  --card: oklch(0.19 0.005 264);
+  --card-foreground: oklch(0.96 0.003 264);
+
+  --popover: oklch(0.2 0.005 264);
+  --popover-foreground: oklch(0.96 0.003 264);
+
+  --primary: oklch(0.62 0.17 256);
+  --primary-foreground: oklch(0.98 0.003 264);
+
+  --secondary: oklch(0.24 0.006 264);
+  --secondary-foreground: oklch(0.96 0.003 264);
+
+  --muted: oklch(0.24 0.006 264);
+  --muted-foreground: oklch(0.66 0.01 264);
+
+  --accent: oklch(0.27 0.007 264);
+  --accent-foreground: oklch(0.96 0.003 264);
+
+  --border: oklch(0.27 0.006 264);
+  --input: oklch(0.27 0.006 264);
+  --ring: oklch(0.62 0.17 256);
+
+  --success: oklch(0.7 0.15 155);
+  --success-foreground: oklch(0.16 0.004 264);
+
+  --warning: oklch(0.78 0.14 75);
+  --warning-foreground: oklch(0.16 0.004 264);
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background-color: color-mix(in oklch, var(--primary) 30%, transparent);
+}
+
+/* Thin, calm scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+  border: 3px solid var(--background);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
