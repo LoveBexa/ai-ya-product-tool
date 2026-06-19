@@ -27,8 +27,13 @@ export default async function ProjectPage({
   let bundle
   try {
     bundle = await getProjectBundle(id)
-  } catch {
-    notFound()
+  } catch (e) {
+    // A genuinely missing project should 404; anything else (DB/schema
+    // errors) should surface its real message via the error boundary.
+    if (e instanceof Error && /not found/i.test(e.message)) {
+      notFound()
+    }
+    throw e
   }
 
   return (
