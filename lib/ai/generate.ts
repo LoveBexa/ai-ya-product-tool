@@ -31,13 +31,13 @@ export async function generateRequirements(
   messages: ChatMessage[],
   idea: string,
 ): Promise<RequirementsDraft> {
-  const { experimental_output } = await generateText({
+  const { output } = await generateText({
     model: BA_MODEL,
     system: REQUIREMENTS_SYSTEM,
     prompt: `Initial idea: "${idea}"\n\nDiscovery conversation:\n${transcript(messages)}\n\nWrite the requirements brief.`,
-    experimental_output: Output.object({ schema: requirementsSchema }),
+    output: Output.object({ schema: requirementsSchema }),
   })
-  return experimental_output
+  return output
 }
 
 const featuresSchema = z.object({
@@ -53,7 +53,7 @@ const featuresSchema = z.object({
 export async function generateFeatures(
   req: RequirementsDraft,
 ): Promise<FeatureDraft[]> {
-  const { experimental_output } = await generateText({
+  const { output } = await generateText({
     model: BA_MODEL,
     system: FEATURES_SYSTEM,
     prompt: `Requirements brief:
@@ -64,9 +64,9 @@ export async function generateFeatures(
 - Success metric: ${req.success_metric}
 
 Produce the prioritized MVP feature list.`,
-    experimental_output: Output.object({ schema: featuresSchema }),
+    output: Output.object({ schema: featuresSchema }),
   })
-  return experimental_output.features
+  return output.features
 }
 
 const cardsSchema = z.object({
@@ -86,7 +86,7 @@ export async function generateCards(
   featureReasoning: string,
   req: RequirementsDraft,
 ): Promise<CardDraft[]> {
-  const { experimental_output } = await generateText({
+  const { output } = await generateText({
     model: BA_MODEL,
     system: CARDS_SYSTEM,
     prompt: `Product context — Solution: ${req.solution}. Audience: ${req.audience}.
@@ -95,7 +95,7 @@ Feature to break down: "${featureName}"
 Why it matters: ${featureReasoning}
 
 Produce the task cards for this feature.`,
-    experimental_output: Output.object({ schema: cardsSchema }),
+    output: Output.object({ schema: cardsSchema }),
   })
-  return experimental_output.cards
+  return output.cards
 }
