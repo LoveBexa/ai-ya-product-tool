@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Loader2, Save, Sparkles, Users, Target, Lightbulb, DollarSign, TrendingUp } from "lucide-react"
+import { Loader2, Save, Sparkles, Users, Target, Lightbulb, DollarSign, TrendingUp, Swords, Gem } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -18,6 +18,8 @@ const FIELDS: {
   { key: "audience", label: "Target audience", icon: Users },
   { key: "problem", label: "Problem", icon: Target },
   { key: "solution", label: "Solution", icon: Lightbulb },
+  { key: "competitive_landscape", label: "Competitive landscape", icon: Swords },
+  { key: "differentiation", label: "Differentiation (unique vs. emulate)", icon: Gem },
   { key: "revenue_model", label: "Revenue model / goal", icon: DollarSign },
   { key: "success_metric", label: "Success metric", icon: TrendingUp },
 ]
@@ -37,6 +39,8 @@ export function RequirementsView({
     audience: requirements.audience,
     problem: requirements.problem,
     solution: requirements.solution,
+    competitive_landscape: requirements.competitive_landscape,
+    differentiation: requirements.differentiation,
     revenue_model: requirements.revenue_model,
     success_metric: requirements.success_metric,
   })
@@ -49,6 +53,8 @@ export function RequirementsView({
     draft.audience !== requirements.audience ||
     draft.problem !== requirements.problem ||
     draft.solution !== requirements.solution ||
+    draft.competitive_landscape !== requirements.competitive_landscape ||
+    draft.differentiation !== requirements.differentiation ||
     draft.revenue_model !== requirements.revenue_model ||
     draft.success_metric !== requirements.success_metric
 

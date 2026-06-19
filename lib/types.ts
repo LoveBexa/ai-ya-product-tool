@@ -29,6 +29,8 @@ export interface Requirements {
   audience: string
   problem: string
   solution: string
+  competitive_landscape: string
+  differentiation: string
   revenue_model: string
   success_metric: string
   created_at: string
@@ -67,6 +69,8 @@ export interface RequirementsDraft {
   audience: string
   problem: string
   solution: string
+  competitive_landscape: string
+  differentiation: string
   revenue_model: string
   success_metric: string
 }

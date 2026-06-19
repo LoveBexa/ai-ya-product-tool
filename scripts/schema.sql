@@ -20,12 +20,14 @@ create table if not exists projects (
 create table if not exists requirements (
   id              uuid primary key default gen_random_uuid(),
   project_id      uuid not null references projects(id) on delete cascade,
-  audience        text not null default '',
-  problem         text not null default '',
-  solution        text not null default '',
-  revenue_model   text not null default '',
-  success_metric  text not null default '',
-  created_at      timestamptz not null default now(),
+  audience              text not null default '',
+  problem               text not null default '',
+  solution              text not null default '',
+  competitive_landscape text not null default '',
+  differentiation       text not null default '',
+  revenue_model         text not null default '',
+  success_metric        text not null default '',
+  created_at            timestamptz not null default now(),
   unique (project_id)
 );
 

@@ -23,6 +23,8 @@ const requirementsSchema = z.object({
   audience: z.string(),
   problem: z.string(),
   solution: z.string(),
+  competitive_landscape: z.string(),
+  differentiation: z.string(),
   revenue_model: z.string(),
   success_metric: z.string(),
 })
@@ -60,10 +62,12 @@ export async function generateFeatures(
 - Audience: ${req.audience}
 - Problem: ${req.problem}
 - Solution: ${req.solution}
+- Competitive landscape: ${req.competitive_landscape}
+- Differentiation strategy: ${req.differentiation}
 - Revenue model / goal: ${req.revenue_model}
 - Success metric: ${req.success_metric}
 
-Produce the prioritized MVP feature list.`,
+Produce the prioritized MVP feature list. Features that deliver the differentiation strategy should lean toward "must"; generic table-stakes features that don't advance the wedge can be "nice" or "ignore" for v1.`,
     output: Output.object({ schema: featuresSchema }),
   })
   return output.features
