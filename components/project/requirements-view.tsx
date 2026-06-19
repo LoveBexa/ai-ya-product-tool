@@ -82,9 +82,11 @@ export function RequirementsView({
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-      <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
-        <div className="mb-4">
-          <h2 className="text-base font-semibold">Requirements brief</h2>
+      <div className="rounded-2xl border border-border bg-card p-5 sm:p-7">
+        <div className="mb-5">
+          <h2 className="text-2xl font-semibold tracking-tight">
+            Requirements <span className="serif-accent">brief</span>
+          </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             The analyst&apos;s read on your idea. Edit anything that&apos;s off
             before cutting the MVP.
@@ -132,8 +134,10 @@ export function RequirementsView({
       </div>
 
       <aside className="flex flex-col gap-4">
-        <div className="rounded-xl border border-border bg-card p-4">
-          <h3 className="text-sm font-medium">Cut the MVP</h3>
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <h3 className="text-base font-semibold tracking-tight">
+            Cut the <span className="serif-accent">MVP</span>
+          </h3>
           <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
             Turn this brief into a prioritized feature list — Must Have, Nice to
             Have, and Ignore — each with the reasoning.

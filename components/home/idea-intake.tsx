@@ -39,9 +39,9 @@ export function IdeaIntake() {
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
-      <label htmlFor="idea" className="text-sm font-medium">
-        What do you want to build?
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-[0_8px_30px_-18px_rgba(80,60,140,0.4)] sm:p-7">
+      <label htmlFor="idea" className="text-lg font-semibold tracking-tight">
+        What do you want to <span className="serif-accent">build?</span>
       </label>
       <p className="mt-1 text-sm text-muted-foreground">
         Describe your idea in a sentence or two. The analyst will ask questions
@@ -82,7 +82,7 @@ export function IdeaIntake() {
             key={ex}
             type="button"
             onClick={() => setIdea(ex)}
-            className="rounded-full border border-border bg-background/40 px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+            className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-lilac hover:text-lilac-foreground"
           >
             {ex}
           </button>

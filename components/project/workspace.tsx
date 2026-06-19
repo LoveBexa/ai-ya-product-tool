@@ -44,13 +44,13 @@ export function Workspace({ initial }: { initial: ProjectBundle }) {
         >
           <ArrowLeft className="h-4 w-4" /> All projects
         </Link>
-        <h1 className="text-balance text-xl font-semibold tracking-tight">
+        <h1 className="text-balance text-2xl font-semibold tracking-tight sm:text-3xl">
           {bundle.project.title}
         </h1>
       </div>
 
       {/* Stepper */}
-      <nav className="mb-6 flex flex-wrap items-center gap-1.5">
+      <nav className="mb-6 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card p-2">
         {STEPS.map((step, i) => {
           const isActive = view === step.key
           const isReached = reached[step.key]
@@ -61,9 +61,9 @@ export function Workspace({ initial }: { initial: ProjectBundle }) {
               onClick={() => goTo(step.key)}
               disabled={!isReached}
               className={cn(
-                "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors",
+                "flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm transition-colors",
                 isActive
-                  ? "bg-secondary text-foreground"
+                  ? "bg-primary text-primary-foreground"
                   : isReached
                     ? "text-muted-foreground hover:bg-secondary hover:text-foreground"
                     : "cursor-not-allowed text-muted-foreground/40",
@@ -71,11 +71,11 @@ export function Workspace({ initial }: { initial: ProjectBundle }) {
             >
               <span
                 className={cn(
-                  "flex h-5 w-5 items-center justify-center rounded-full border text-[11px]",
+                  "flex h-5 w-5 items-center justify-center rounded-full border text-[11px] font-semibold",
                   isActive
-                    ? "border-primary bg-primary text-primary-foreground"
+                    ? "border-transparent bg-mint text-mint-foreground"
                     : isDone
-                      ? "border-primary/50 text-primary"
+                      ? "border-transparent bg-mint text-mint-foreground"
                       : "border-border",
                 )}
               >

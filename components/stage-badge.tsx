@@ -1,11 +1,14 @@
 import { cn } from "@/lib/utils"
 import type { ProjectStage } from "@/lib/types"
 
-const LABELS: Record<ProjectStage, string> = {
-  discovery: "Discovery",
-  requirements: "Requirements",
-  mvp: "MVP cut",
-  tasks: "Task board",
+const STAGES: Record<ProjectStage, { label: string; className: string }> = {
+  discovery: { label: "Discovery", className: "bg-lilac text-lilac-foreground" },
+  requirements: {
+    label: "Requirements",
+    className: "bg-yellow text-yellow-foreground",
+  },
+  mvp: { label: "MVP cut", className: "bg-leaf text-leaf-foreground" },
+  tasks: { label: "Task board", className: "bg-mint text-mint-foreground" },
 }
 
 export function StageBadge({
@@ -15,15 +18,16 @@ export function StageBadge({
   stage: ProjectStage
   className?: string
 }) {
+  const s = STAGES[stage]
   return (
     <span
       className={cn(
-        "shrink-0 rounded-full border border-border bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground",
-        stage === "tasks" && "border-primary/40 text-foreground",
+        "shrink-0 rounded-full px-3 py-1 text-xs font-medium",
+        s.className,
         className,
       )}
     >
-      {LABELS[stage]}
+      {s.label}
     </span>
   )
 }

@@ -14,25 +14,29 @@ const COLUMNS: {
   key: FeaturePriority
   label: string
   hint: string
-  accent: string
+  chip: string
+  dropzone: string
 }[] = [
   {
     key: "must",
     label: "Must have",
     hint: "Core to the MVP",
-    accent: "border-primary/50",
+    chip: "bg-mint text-mint-foreground",
+    dropzone: "border-mint bg-mint/15",
   },
   {
     key: "nice",
     label: "Nice to have",
     hint: "Valuable, deferrable",
-    accent: "border-warning/40",
+    chip: "bg-yellow text-yellow-foreground",
+    dropzone: "border-yellow bg-yellow/15",
   },
   {
     key: "ignore",
     label: "Ignore",
     hint: "Out of scope for v1",
-    accent: "border-border",
+    chip: "bg-lilac text-lilac-foreground",
+    dropzone: "border-lilac bg-lilac/15",
   },
 ]
 
@@ -77,7 +81,9 @@ export function MvpBoard({
     <div>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-base font-semibold">MVP cut</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">
+            MVP <span className="serif-accent">cut</span>
+          </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Reassign anything you disagree with. Then build task cards for the
             Must Haves.
@@ -104,17 +110,29 @@ export function MvpBoard({
           const items = features.filter((f) => f.priority === col.key)
           return (
             <div key={col.key} className="flex flex-col gap-3">
-              <div className="flex items-baseline justify-between px-1">
-                <div>
-                  <h3 className="text-sm font-medium">{col.label}</h3>
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      "rounded-full px-3 py-1 text-xs font-semibold",
+                      col.chip,
+                    )}
+                  >
+                    {col.label}
+                  </span>
                   <p className="text-xs text-muted-foreground">{col.hint}</p>
                 </div>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs font-medium text-muted-foreground">
                   {items.length}
                 </span>
               </div>
 
-              <div className="flex min-h-24 flex-col gap-2 rounded-xl border border-dashed border-border p-2">
+              <div
+                className={cn(
+                  "flex min-h-24 flex-col gap-2 rounded-2xl border border-dashed p-2.5",
+                  col.dropzone,
+                )}
+              >
                 {items.length === 0 && (
                   <p className="px-2 py-4 text-center text-xs text-muted-foreground">
                     Nothing here
@@ -123,21 +141,18 @@ export function MvpBoard({
                 {items.map((f) => (
                   <div
                     key={f.id}
-                    className={cn(
-                      "rounded-lg border bg-card p-3",
-                      col.accent,
-                    )}
+                    className="rounded-xl border border-border bg-card p-3.5 shadow-[0_4px_14px_-10px_rgba(80,60,140,0.4)]"
                   >
-                    <p className="text-sm font-medium leading-snug">{f.name}</p>
+                    <p className="text-sm font-semibold leading-snug">{f.name}</p>
                     <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                       {f.reasoning}
                     </p>
-                    <div className="mt-2.5 flex gap-1">
+                    <div className="mt-3 flex gap-1.5">
                       {COLUMNS.filter((c) => c.key !== col.key).map((c) => (
                         <button
                           key={c.key}
                           onClick={() => move(f, c.key)}
-                          className="rounded border border-border px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                          className="rounded-full border border-border px-2.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                         >
                           → {c.label}
                         </button>

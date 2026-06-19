@@ -85,10 +85,10 @@ export function CardDetail({
                 key={key}
                 onClick={() => onStatus(key)}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs transition-colors",
+                  "flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors",
                   card.status === key
-                    ? "border-primary/50 bg-secondary text-foreground"
-                    : "border-border text-muted-foreground hover:text-foreground",
+                    ? "border-transparent bg-mint text-mint-foreground"
+                    : "border-border text-muted-foreground hover:bg-secondary hover:text-foreground",
                 )}
               >
                 <Icon className="h-3.5 w-3.5" /> {label}
@@ -159,7 +159,7 @@ export function CardDetail({
                 )}
               </Button>
             </div>
-            <pre className="whitespace-pre-wrap rounded-lg border border-border bg-background/40 p-3 font-mono text-xs leading-relaxed text-foreground">
+            <pre className="whitespace-pre-wrap rounded-xl border border-border bg-secondary p-3.5 font-mono text-xs leading-relaxed text-foreground">
               {card.ai_prompt}
             </pre>
           </section>
@@ -173,21 +173,21 @@ export function CardDetail({
                 href={`https://www.google.com/search?q=${search}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm transition-colors hover:border-primary/40"
+                className="flex items-center justify-between rounded-xl border border-border bg-secondary px-3.5 py-2.5 text-sm transition-colors hover:bg-leaf hover:text-leaf-foreground"
               >
                 <span className="text-muted-foreground">
                   Search docs: <span className="text-foreground">{card.resource_query}</span>
                 </span>
-                <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                <ExternalLink className="h-3.5 w-3.5" />
               </a>
               <a
                 href={`https://www.youtube.com/results?search_query=${search}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm transition-colors hover:border-primary/40"
+                className="flex items-center justify-between rounded-xl border border-border bg-secondary px-3.5 py-2.5 text-sm transition-colors hover:bg-pink hover:text-pink-foreground"
               >
                 <span className="text-muted-foreground">Watch a tutorial</span>
-                <Youtube className="h-4 w-4 text-muted-foreground" />
+                <Youtube className="h-4 w-4" />
               </a>
             </div>
           </section>

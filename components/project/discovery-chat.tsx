@@ -112,7 +112,7 @@ export function DiscoveryChat({
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-      <div className="flex min-h-[60vh] flex-col rounded-xl border border-border bg-card">
+      <div className="flex min-h-[60vh] flex-col rounded-2xl border border-border bg-card">
         <div
           ref={scrollRef}
           className="flex-1 space-y-5 overflow-y-auto p-4 sm:p-6"
@@ -174,8 +174,10 @@ export function DiscoveryChat({
       </div>
 
       <aside className="flex flex-col gap-4">
-        <div className="rounded-xl border border-border bg-card p-4">
-          <h3 className="text-sm font-medium">Ready to move on?</h3>
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <h3 className="text-base font-semibold tracking-tight">
+            Ready to <span className="serif-accent">move on?</span>
+          </h3>
           <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
             Once the analyst understands your audience, problem, solution, and a
             success metric, generate the requirements brief.
@@ -203,8 +205,8 @@ export function DiscoveryChat({
           {error && <p className="mt-2 text-xs text-warning">{error}</p>}
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-4">
-          <h3 className="text-xs font-medium text-muted-foreground">
+        <div className="rounded-2xl border border-border bg-lilac/40 p-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-lilac-foreground">
             Your idea
           </h3>
           <p className="mt-1.5 text-sm leading-relaxed">{idea}</p>

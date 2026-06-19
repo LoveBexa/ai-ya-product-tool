@@ -18,54 +18,82 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  /* Playful pastel accents */
+  --color-mint: var(--mint);
+  --color-mint-foreground: var(--mint-foreground);
+  --color-lilac: var(--lilac);
+  --color-lilac-foreground: var(--lilac-foreground);
+  --color-yellow: var(--yellow);
+  --color-yellow-foreground: var(--yellow-foreground);
+  --color-leaf: var(--leaf);
+  --color-leaf-foreground: var(--leaf-foreground);
+  --color-pink: var(--pink);
+  --color-pink-foreground: var(--pink-foreground);
+
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
 
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 3px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 6px);
+  --radius-2xl: calc(var(--radius) + 14px);
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 1rem;
 
-  /* Dark, calm Linear/Notion aesthetic */
-  --background: oklch(0.16 0.004 264);
-  --foreground: oklch(0.96 0.003 264);
+  /* Light, playful Creative-Academy aesthetic */
+  --background: oklch(0.92 0.02 295);
+  --foreground: oklch(0.21 0.02 285);
 
-  --card: oklch(0.19 0.005 264);
-  --card-foreground: oklch(0.96 0.003 264);
+  --card: oklch(0.995 0.003 290);
+  --card-foreground: oklch(0.21 0.02 285);
 
-  --popover: oklch(0.2 0.005 264);
-  --popover-foreground: oklch(0.96 0.003 264);
+  --popover: oklch(0.995 0.003 290);
+  --popover-foreground: oklch(0.21 0.02 285);
 
-  --primary: oklch(0.62 0.17 256);
-  --primary-foreground: oklch(0.98 0.003 264);
+  /* Black pill buttons, like the reference */
+  --primary: oklch(0.22 0.015 285);
+  --primary-foreground: oklch(0.98 0.005 290);
 
-  --secondary: oklch(0.24 0.006 264);
-  --secondary-foreground: oklch(0.96 0.003 264);
+  --secondary: oklch(0.96 0.01 295);
+  --secondary-foreground: oklch(0.26 0.02 285);
 
-  --muted: oklch(0.24 0.006 264);
-  --muted-foreground: oklch(0.66 0.01 264);
+  --muted: oklch(0.95 0.012 295);
+  --muted-foreground: oklch(0.5 0.02 285);
 
-  --accent: oklch(0.27 0.007 264);
-  --accent-foreground: oklch(0.96 0.003 264);
+  --accent: oklch(0.88 0.05 300);
+  --accent-foreground: oklch(0.24 0.03 295);
 
-  --border: oklch(0.27 0.006 264);
-  --input: oklch(0.27 0.006 264);
-  --ring: oklch(0.62 0.17 256);
+  --border: oklch(0.88 0.012 295);
+  --input: oklch(0.9 0.012 295);
+  --ring: oklch(0.78 0.1 300);
 
-  --success: oklch(0.7 0.15 155);
-  --success-foreground: oklch(0.16 0.004 264);
+  /* Pastel accent family */
+  --mint: oklch(0.83 0.13 158);
+  --mint-foreground: oklch(0.26 0.05 160);
+  --lilac: oklch(0.83 0.08 300);
+  --lilac-foreground: oklch(0.28 0.05 300);
+  --yellow: oklch(0.92 0.12 102);
+  --yellow-foreground: oklch(0.34 0.06 95);
+  --leaf: oklch(0.9 0.1 135);
+  --leaf-foreground: oklch(0.32 0.06 140);
+  --pink: oklch(0.85 0.09 0);
+  --pink-foreground: oklch(0.32 0.06 0);
 
-  --warning: oklch(0.78 0.14 75);
-  --warning-foreground: oklch(0.16 0.004 264);
+  --success: oklch(0.72 0.15 155);
+  --success-foreground: oklch(0.22 0.05 160);
+
+  --warning: oklch(0.8 0.13 75);
+  --warning-foreground: oklch(0.32 0.06 70);
 }
 
 * {
@@ -78,11 +106,18 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-::selection {
-  background-color: color-mix(in oklch, var(--primary) 30%, transparent);
+/* Italic serif accent used inside headings, e.g. "Kids Academy" */
+.serif-accent {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }
 
-/* Thin, calm scrollbars */
+::selection {
+  background-color: color-mix(in oklch, var(--lilac) 55%, transparent);
+}
+
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -91,7 +126,7 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: oklch(0.82 0.02 295);
   border-radius: 9999px;
   border: 3px solid var(--background);
 }
