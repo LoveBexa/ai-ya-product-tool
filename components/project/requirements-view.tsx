@@ -95,7 +95,7 @@ export function RequirementsView({
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             The analyst&apos;s read on your idea. Edit anything that&apos;s off
-            before cutting the MVP.
+            before defining the MVP.
           </p>
         </div>
 
@@ -142,7 +142,7 @@ export function RequirementsView({
       <aside className="flex flex-col gap-4">
         <div className="rounded-2xl border border-border bg-card p-5">
           <h3 className="text-base font-semibold tracking-tight">
-            Cut the <span className="serif-accent">MVP</span>
+            Define the <span className="serif-accent">MVP</span>
           </h3>
           <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
             Turn this brief into a prioritized feature list — Must Have, Nice to
@@ -159,7 +159,7 @@ export function RequirementsView({
               </>
             ) : (
               <>
-                <Sparkles className="h-4 w-4" /> Generate MVP cut
+                <Sparkles className="h-4 w-4" /> Generate MVP definition
               </>
             )}
           </Button>

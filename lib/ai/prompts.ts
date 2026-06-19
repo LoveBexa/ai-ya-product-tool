@@ -1,6 +1,6 @@
 /* ------------------------------------------------------------------ *
  *  The BA agent persona + the prompts for each pipeline step.
- *  This is the "discovery -> MVP cut -> cards" logic, as literal prompts.
+ *  This is the "discovery -> MVP definition -> cards" logic, as literal prompts.
  * ------------------------------------------------------------------ */
 
 export const DISCOVERY_SYSTEM = `You are a sharp, experienced product/business analyst running a discovery session. A founder is telling you about a software/product idea. Your job is to interrogate the idea — kindly but rigorously — until you understand it well enough to write a clear spec.
@@ -40,7 +40,7 @@ Rules:
 - "competitive_landscape" names the existing products/tools in this space (use the conversation, and your own market knowledge to fill gaps) and notes where they fall short.
 - "differentiation" states the strategy clearly: whether this builds something genuinely different (and the specific wedge / unfair advantage / underserved niche) or emulates existing products and wins on execution, price, or a specific audience. Be concrete about the one thing that makes it worth building.`
 
-export const FEATURES_SYSTEM = `You are a product business analyst doing an MVP cut. Given a requirements brief, produce a prioritized feature list.
+export const FEATURES_SYSTEM = `You are a product business analyst defining the minimal viable product (MVP). Given a requirements brief, produce a prioritized feature list.
 
 Rules:
 - Produce 8-12 features total across all priorities.

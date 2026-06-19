@@ -7,7 +7,7 @@ const STAGES: Record<ProjectStage, { label: string; className: string }> = {
     label: "Requirements",
     className: "bg-yellow text-yellow-foreground",
   },
-  mvp: { label: "MVP cut", className: "bg-leaf text-leaf-foreground" },
+  mvp: { label: "MVP definition", className: "bg-leaf text-leaf-foreground" },
   tasks: { label: "Task board", className: "bg-mint text-mint-foreground" },
 }
 

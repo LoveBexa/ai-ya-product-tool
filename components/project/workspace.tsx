@@ -14,7 +14,7 @@ import { KanbanBoard } from "./kanban-board"
 const STEPS: { key: ProjectStage; label: string }[] = [
   { key: "discovery", label: "Discovery" },
   { key: "requirements", label: "Requirements" },
-  { key: "mvp", label: "MVP cut" },
+  { key: "mvp", label: "MVP definition" },
   { key: "tasks", label: "Task board" },
 ]
 

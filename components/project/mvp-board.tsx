@@ -82,7 +82,8 @@ export function MvpBoard({
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-semibold tracking-tight">
-            MVP <span className="serif-accent">cut</span>
+            Minimal viable product (MVP){" "}
+            <span className="serif-accent">definition</span>
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Reassign anything you disagree with. Then build task cards for the
