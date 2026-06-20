@@ -1,18 +1,19 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport, type UIMessage } from "ai"
 import { ArrowUp, Loader2, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import type { ChatMessage, Feature, Requirements } from "@/lib/types"
+import type { ChatMessage } from "@/lib/types"
 import {
   saveChat,
-  generateAndSaveRequirements,
-  generateAndSaveFeatures,
+  finishDiscovery,
 } from "@/app/actions/projects"
 import { useProject } from "./project-context"
+import { formatAiError } from "@/lib/ai/errors"
 import { DiscoveryLearnings } from "./discovery-learnings"
 import { StageHeader } from "./stage-header"
 import {
@@ -67,15 +68,9 @@ function isDiscoveryReadyMessage(text: string): boolean {
   return false
 }
 
-export function DiscoveryChat({
-  onDiscoveryComplete,
-}: {
-  onDiscoveryComplete: (payload: {
-    requirements: Requirements
-    features: Feature[]
-  }) => void
-}) {
+export function DiscoveryChat() {
   const { bundle, setBundle } = useProject()
+  const router = useRouter()
   const projectId = bundle.project.id
   const idea = bundle.project.idea
   const savedChat = bundle.project.chat ?? []
@@ -167,15 +162,20 @@ export function DiscoveryChat({
         role: m.role === "user" ? "user" : "assistant",
         content: textOf(m),
       }))
-      const requirements = await generateAndSaveRequirements(
+      const { requirements, features } = await finishDiscovery(
         projectId,
         idea,
         chat,
       )
-      const features = await generateAndSaveFeatures(projectId)
-      onDiscoveryComplete({ requirements, features })
+      setBundle((b) => ({
+        ...b,
+        requirements,
+        features,
+        project: { ...b.project, stage: "mvp" },
+      }))
+      router.push(`/projects/${projectId}/define`)
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Generation failed.")
+      setError(formatAiError(e))
     } finally {
       setGenerating(false)
     }
@@ -258,7 +258,7 @@ export function DiscoveryChat({
                         >
                           {generating ? (
                             <>
-                              <Loader2 className="h-4 w-4 animate-spin" /> Generating…
+                              <Loader2 className="h-4 w-4 animate-spin" /> Building Define board…
                             </>
                           ) : (
                             <>
@@ -335,7 +335,7 @@ export function DiscoveryChat({
             >
               {generating ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Generating…
+                  <Loader2 className="h-4 w-4 animate-spin" /> Building Define board…
                 </>
               ) : (
                 <>
@@ -361,8 +361,8 @@ export function DiscoveryChat({
               Ready to <span className="serif-accent">move on?</span>
             </h3>
             <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-              Once the analyst understands your idea, finish discovery to define
-              what ships first.
+              Turns your chat into a requirements brief and MVP feature cards on
+              the Define board.
             </p>
           </div>
 

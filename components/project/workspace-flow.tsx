@@ -1,7 +1,8 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 import { deriveSchemaBlueprint } from "@/lib/design/schema-blueprint"
+import { saveProductDesign } from "@/app/actions/projects"
 import { useProject } from "./project-context"
 import { DiscoveryChat } from "./discovery-chat"
 import { DefineBoard } from "./define-board"
@@ -16,8 +17,7 @@ export function WorkspaceFlow({ view }: { view: FlowView }) {
   const projectId = bundle.project.id
   const requirements = bundle.requirements
   const features = bundle.features
-
-  const [design, setDesign] = useState<ProductDesign | null>(null)
+  const design = bundle.design
 
   const mustFeatures = useMemo(
     () => features.filter((f) => f.priority === "must"),
@@ -29,19 +29,18 @@ export function WorkspaceFlow({ view }: { view: FlowView }) {
     [design, mustFeatures],
   )
 
+  function patchDesign(next: ProductDesign) {
+    setBundle((b) => ({
+      ...b,
+      design: next,
+      project: { ...b.project, product_design: next },
+    }))
+  }
+
   if (view === "discover") {
     return (
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <DiscoveryChat
-          onDiscoveryComplete={({ requirements, features }) =>
-            setBundle((b) => ({
-              ...b,
-              requirements,
-              features,
-              project: { ...b.project, stage: "mvp" },
-            }))
-          }
-        />
+        <DiscoveryChat />
       </div>
     )
   }
@@ -71,18 +70,16 @@ export function WorkspaceFlow({ view }: { view: FlowView }) {
           design={design}
           features={features}
           schemaBlueprint={schemaBlueprint}
-          onScreenPurposeChange={(screenId, purpose) =>
-            setDesign((d) =>
-              d
-                ? {
-                    ...d,
-                    screens: d.screens.map((s) =>
-                      s.id === screenId ? { ...s, purpose } : s,
-                    ),
-                  }
-                : d,
-            )
-          }
+          onScreenPurposeChange={(screenId, purpose) => {
+            const next: ProductDesign = {
+              ...design,
+              screens: design.screens.map((s) =>
+                s.id === screenId ? { ...s, purpose } : s,
+              ),
+            }
+            patchDesign(next)
+            saveProductDesign(projectId, next).catch(() => {})
+          }}
         />
       )
     }

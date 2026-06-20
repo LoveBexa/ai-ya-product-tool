@@ -1,4 +1,5 @@
 import type { DesignTrace } from "@/lib/types/design"
+import type { ProductDesign } from "@/lib/types/design"
 
 /* ------------------------------------------------------------------ *
  *  Shared data model — mirrors the Supabase schema
@@ -19,6 +20,7 @@ export interface Project {
   chat: ChatMessage[]
   foundation_prompt: string
   database_schema: string
+  product_design: ProductDesign | null
   created_at: string
 }
 

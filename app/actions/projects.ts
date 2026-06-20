@@ -5,9 +5,11 @@ import { getSupabaseAdmin } from "@/lib/supabase/server"
 import {
   generateRequirements,
   generateFeatures,
+  generateDesign,
   generateQueueItem,
   generateFoundationPrompt,
 } from "@/lib/ai/generate"
+import type { ProductDesign } from "@/lib/types/design"
 import type {
   Project,
   Requirements,
@@ -25,6 +27,7 @@ export interface ProjectBundle {
   requirements: Requirements | null
   features: Feature[]
   cards: TaskCard[]
+  design: ProductDesign | null
 }
 
 /* ---------------------------- Projects ---------------------------- */
@@ -85,6 +88,7 @@ export async function updateProjectTitle(
     ...(data as Project),
     foundation_prompt: (data as Project).foundation_prompt ?? "",
     database_schema: (data as Project).database_schema ?? "",
+    product_design: (data as Project).product_design ?? null,
   }
 }
 
@@ -108,14 +112,16 @@ export async function getProjectBundle(id: string): Promise<ProjectBundle> {
 
   if (!project) throw new Error("Project not found")
 
+  const raw = project as Project & { product_design?: ProductDesign | null }
+  const design = raw.product_design ?? null
+
   return {
     project: {
-      ...(project as Project),
-      chat: Array.isArray((project as Project).chat)
-        ? (project as Project).chat
-        : [],
-      foundation_prompt: (project as Project).foundation_prompt ?? "",
-      database_schema: (project as Project).database_schema ?? "",
+      ...raw,
+      chat: Array.isArray(raw.chat) ? raw.chat : [],
+      foundation_prompt: raw.foundation_prompt ?? "",
+      database_schema: raw.database_schema ?? "",
+      product_design: design,
     },
     requirements: (req ?? null) as Requirements | null,
     features: ((features ?? []) as Feature[]).map((f) => ({
@@ -123,6 +129,7 @@ export async function getProjectBundle(id: string): Promise<ProjectBundle> {
       verify: f.verify ?? "",
     })),
     cards: ((cards ?? []) as TaskCard[]).map(normalizeCard),
+    design,
   }
 }
 
@@ -197,6 +204,17 @@ export async function generateAndSaveRequirements(
   return data as Requirements
 }
 
+/** Distill discovery chat into requirements, then MVP feature cards for Define. */
+export async function finishDiscovery(
+  projectId: string,
+  idea: string,
+  chat: ChatMessage[],
+): Promise<{ requirements: Requirements; features: Feature[] }> {
+  const requirements = await generateAndSaveRequirements(projectId, idea, chat)
+  const features = await generateAndSaveFeatures(projectId)
+  return { requirements, features }
+}
+
 /* ---------------------------- Features ---------------------------- */
 
 export async function generateAndSaveFeatures(
@@ -228,6 +246,63 @@ export async function generateAndSaveFeatures(
   await setStage(projectId, "mvp")
   revalidatePath(`/projects/${projectId}`)
   return ((data ?? []) as Feature[]).sort((a, b) => a.sort_order - b.sort_order)
+}
+
+/* ----------------------------- Design ----------------------------- */
+
+export async function generateAndSaveDesign(
+  projectId: string,
+): Promise<ProductDesign> {
+  const db = getSupabaseAdmin()
+  const [{ data: project }, { data: req }, { data: features }] =
+    await Promise.all([
+      db.from("projects").select("*").eq("id", projectId).single(),
+      db.from("requirements").select("*").eq("project_id", projectId).single(),
+      db
+        .from("features")
+        .select("*")
+        .eq("project_id", projectId)
+        .eq("priority", "must")
+        .order("sort_order", { ascending: true }),
+    ])
+
+  if (!project) throw new Error("Project not found")
+  if (!req) throw new Error("Requirements missing — finish Discover first")
+
+  const mustFeatures = (features ?? []) as Feature[]
+  if (mustFeatures.length === 0) {
+    throw new Error("Add at least one Must Have feature before creating design flows")
+  }
+
+  const design = await generateDesign(
+    projectId,
+    (project as Project).idea,
+    req as Requirements,
+    mustFeatures,
+  )
+
+  const { error } = await db
+    .from("projects")
+    .update({ product_design: design })
+    .eq("id", projectId)
+  if (error) throw new Error(error.message)
+
+  revalidatePath(`/projects/${projectId}`)
+  return design
+}
+
+export async function saveProductDesign(
+  projectId: string,
+  design: ProductDesign,
+): Promise<ProductDesign> {
+  const db = getSupabaseAdmin()
+  const { error } = await db
+    .from("projects")
+    .update({ product_design: design })
+    .eq("id", projectId)
+  if (error) throw new Error(error.message)
+  revalidatePath(`/projects/${projectId}`)
+  return design
 }
 
 export async function updateFeaturePriority(

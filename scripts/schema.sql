@@ -16,6 +16,7 @@ create table if not exists projects (
   chat        jsonb not null default '[]'::jsonb, -- NEW: persisted discovery transcript
   foundation_prompt text not null default '',
   database_schema text not null default '',
+  product_design jsonb, -- UX flows + screens from Design stage
   created_at  timestamptz not null default now()
 );
 
@@ -91,5 +92,5 @@ create index if not exists idx_cards_feature    on cards(feature_id);
 -- alter table cards add column if not exists test_steps text[] not null default '{}';
 -- alter table cards add column if not exists dependencies text[] not null default '{}';
 -- alter table projects add column if not exists foundation_prompt text not null default '';
--- alter table projects add column if not exists database_schema text not null default '';
+-- alter table projects add column if not exists product_design jsonb;
 -- alter table features add column if not exists verify text not null default '';

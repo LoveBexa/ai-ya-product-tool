@@ -62,5 +62,16 @@ Rules:
 - Match the stack implied by the requirements (default to Next.js App Router + Supabase if unclear).
 - Keep it actionable in one session for an experienced developer.`
 
+export const DESIGN_SYSTEM = `You are a senior UX designer. Given a product requirements brief and a list of MUST-HAVE MVP features, produce user flows and a screen inventory.
+
+Rules:
+- Cover ONLY the must-have features listed — ignore nice-to-have or out-of-scope ideas.
+- user_flow: 5-10 steps from first visit to core value delivered. Use exact feature_names from the list where a step implements that feature (empty array for generic steps like "Landing").
+- workflow: 3-6 backend/system steps (notifications, confirmations, status changes) tied to must-have features.
+- screens: 4-8 screens. Each screen needs a clear name, one-sentence purpose, feature_names it implements, and user_flow_labels linking to user_flow step labels (exact label text).
+- Use simple, founder-friendly screen names (e.g. "Sign up", "Dashboard", "Checkout").
+- Order flows logically — signup before actions that require an account.
+- feature_names must match the provided must-have list exactly (case-insensitive ok in output but copy names faithfully).`
+
 /** @deprecated */
 export const CARDS_SYSTEM = QUEUE_SYSTEM

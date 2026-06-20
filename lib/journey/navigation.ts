@@ -36,6 +36,15 @@ export const STOP_LABEL: Record<JourneyStop, string> = {
   execute: "Blueprint",
 }
 
+/** Primary forward action on each step (bottom-right in phase nav). */
+export const NEXT_STEP_CTA: Partial<Record<JourneyStop, string>> = {
+  define: "Create design flows",
+}
+
+export function nextStepLabel(from: JourneyStop, to: JourneyStop): string {
+  return NEXT_STEP_CTA[from] ?? STOP_LABEL[to]
+}
+
 export function projectPath(projectId: string, stop: JourneyStop): string {
   return `/projects/${projectId}${STOP_PATH[stop]}`
 }
