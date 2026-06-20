@@ -111,6 +111,9 @@ export async function getProjectBundle(id: string): Promise<ProjectBundle> {
   return {
     project: {
       ...(project as Project),
+      chat: Array.isArray((project as Project).chat)
+        ? (project as Project).chat
+        : [],
       foundation_prompt: (project as Project).foundation_prompt ?? "",
       database_schema: (project as Project).database_schema ?? "",
     },
@@ -162,6 +165,7 @@ export async function saveChat(projectId: string, chat: ChatMessage[]) {
   const db = getSupabaseAdmin()
   const { error } = await db.from("projects").update({ chat }).eq("id", projectId)
   if (error) throw new Error(error.message)
+  revalidatePath(`/projects/${projectId}`)
 }
 
 async function setStage(projectId: string, stage: Project["stage"]) {

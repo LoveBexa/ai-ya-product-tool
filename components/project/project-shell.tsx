@@ -97,14 +97,25 @@ export function ProjectShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { bundle } = useProject()
   const base = `/projects/${bundle.project.id}`
+  const lockViewport = /\/discover(?:\/|$)/.test(pathname)
 
   function isActive(match: RegExp) {
     return match.test(pathname)
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+    <div
+      className={cn(
+        "flex min-h-dvh flex-col",
+        lockViewport && "lg:h-dvh lg:overflow-hidden",
+      )}
+    >
+      <div
+        className={cn(
+          "flex min-h-0 flex-1 flex-col lg:flex-row",
+          lockViewport && "lg:overflow-hidden",
+        )}
+      >
         <aside className="hidden w-56 shrink-0 border-r border-border bg-card/40 lg:flex lg:flex-col">
           <div className="border-b border-border p-4">
             <BrandMark href="/start" showTagline={false} />
@@ -149,8 +160,20 @@ export function ProjectShell({ children }: { children: React.ReactNode }) {
             <div className="w-[4.5rem] shrink-0" aria-hidden />
           </div>
 
-          <main className="flex min-h-0 w-full flex-1 flex-col px-4 py-4 pb-24 sm:px-6 sm:py-6 lg:px-8">
-            {children}
+          <main
+            className={cn(
+              "flex min-h-0 w-full flex-1 flex-col px-4 py-4 pb-24 sm:px-6 sm:py-6 lg:px-8 lg:pb-6",
+              lockViewport && "overflow-hidden lg:pb-6",
+            )}
+          >
+            <div
+              className={cn(
+                "flex min-h-0 flex-1 flex-col",
+                lockViewport && "overflow-hidden",
+              )}
+            >
+              {children}
+            </div>
             <PhaseNav projectId={bundle.project.id} />
           </main>
         </div>

@@ -18,7 +18,7 @@ export function PhaseNav({ projectId }: { projectId: string }) {
   return (
     <nav
       aria-label="Phase navigation"
-      className="mt-10 flex items-center justify-between gap-4 border-t border-border pt-6"
+      className="mt-10 flex shrink-0 items-center justify-between gap-4 border-t border-border pt-6"
     >
       {prev ? (
         <Link

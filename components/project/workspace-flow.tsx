@@ -31,17 +31,18 @@ export function WorkspaceFlow({ view }: { view: FlowView }) {
 
   if (view === "discover") {
     return (
-      <DiscoveryChat
-        bundle={bundle}
-        onDiscoveryComplete={({ requirements, features }) =>
-          setBundle((b) => ({
-            ...b,
-            requirements,
-            features,
-            project: { ...b.project, stage: "mvp" },
-          }))
-        }
-      />
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <DiscoveryChat
+          onDiscoveryComplete={({ requirements, features }) =>
+            setBundle((b) => ({
+              ...b,
+              requirements,
+              features,
+              project: { ...b.project, stage: "mvp" },
+            }))
+          }
+        />
+      </div>
     )
   }
 

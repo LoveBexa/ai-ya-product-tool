@@ -6,13 +6,13 @@ import { DefaultChatTransport, type UIMessage } from "ai"
 import { ArrowUp, Loader2, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import type { ProjectBundle } from "@/app/actions/projects"
 import type { ChatMessage, Feature, Requirements } from "@/lib/types"
 import {
   saveChat,
   generateAndSaveRequirements,
   generateAndSaveFeatures,
 } from "@/app/actions/projects"
+import { useProject } from "./project-context"
 import { DiscoveryLearnings } from "./discovery-learnings"
 import { StageHeader } from "./stage-header"
 import {
@@ -41,18 +41,44 @@ function toInitial(chat: ChatMessage[]): UIMessage[] {
   }))
 }
 
+function isDiscoveryReadyMessage(text: string): boolean {
+  const lower = text
+    .toLowerCase()
+    .replace(/[\u201c\u201d\u2018\u2019]/g, '"')
+    .replace(/\s+/g, " ")
+
+  if (lower.includes("generate requirements")) return true
+  if (lower.includes("finish discovery")) return true
+  if (
+    lower.includes("move forward") &&
+    (lower.includes("understanding") ||
+      lower.includes("click") ||
+      lower.includes("generate"))
+  ) {
+    return true
+  }
+  if (
+    lower.includes("solid understanding") &&
+    (lower.includes("move forward") || lower.includes("continue"))
+  ) {
+    return true
+  }
+
+  return false
+}
+
 export function DiscoveryChat({
-  bundle,
   onDiscoveryComplete,
 }: {
-  bundle: ProjectBundle
   onDiscoveryComplete: (payload: {
     requirements: Requirements
     features: Feature[]
   }) => void
 }) {
+  const { bundle, setBundle } = useProject()
   const projectId = bundle.project.id
   const idea = bundle.project.idea
+  const savedChat = bundle.project.chat ?? []
   const { modelId, setModel, models, provider, loading: modelsLoading } =
     useDiscoverChatModel()
   const modelIdRef = useRef(modelId)
@@ -75,7 +101,7 @@ export function DiscoveryChat({
 
   const { messages, sendMessage, status, error: chatError } = useChat({
     id: projectId,
-    messages: toInitial(bundle.project.chat ?? []),
+    messages: toInitial(savedChat),
     transport,
   })
 
@@ -90,23 +116,41 @@ export function DiscoveryChat({
   const showAnalysisPreview = materials.length >= 2
 
   useEffect(() => {
-    if (seeded.current || modelsLoading || !modelId || messages.length > 0) return
+    if (seeded.current || modelsLoading || !modelId) return
+    if (messages.length > 0 || savedChat.length > 0) {
+      seeded.current = true
+      return
+    }
     seeded.current = true
     sendMessage({ text: idea })
-  }, [messages.length, idea, sendMessage, modelId, modelsLoading])
+  }, [messages.length, savedChat.length, idea, sendMessage, modelId, modelsLoading])
 
   useEffect(() => {
     if (status !== "ready" || messages.length === 0) return
-    const chat: ChatMessage[] = messages.map((m) => ({
-      role: m.role === "user" ? "user" : "assistant",
-      content: textOf(m),
-    }))
-    saveChat(projectId, chat).catch(() => {})
-  }, [status, messages, projectId])
 
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
-  }, [messages, busy])
+    const chat: ChatMessage[] = messages
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .map((m) => ({
+        role: m.role === "user" ? "user" : "assistant",
+        content: textOf(m).trim(),
+      }))
+      .filter((m) => m.content.length > 0)
+
+    if (chat.length === 0) return
+
+    const next = JSON.stringify(chat)
+    const prev = JSON.stringify(savedChat)
+    if (next === prev) return
+
+    saveChat(projectId, chat)
+      .then(() => {
+        setBundle((b) => ({
+          ...b,
+          project: { ...b.project, chat },
+        }))
+      })
+      .catch(() => {})
+  }, [status, messages, projectId, savedChat, setBundle])
 
   function send() {
     const value = input.trim()
@@ -139,13 +183,28 @@ export function DiscoveryChat({
 
   const exchanges = messages.filter((m) => m.role === "user").length
   const canGenerate = exchanges >= 2 && !busy
+  const lastMessage = messages[messages.length - 1]
+  const lastAssistantText =
+    lastMessage?.role === "assistant" ? textOf(lastMessage) : ""
+  const showInlineGenerate =
+    !busy &&
+    !generating &&
+    lastMessage?.role === "assistant" &&
+    lastAssistantText.length > 0 &&
+    isDiscoveryReadyMessage(lastAssistantText)
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
+  }, [messages, busy, showInlineGenerate])
 
   return (
-    <div className="flex w-full min-h-0 flex-1 flex-col">
-      <StageHeader stage="discover" />
-      <div className="grid w-full flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_min(18rem,22rem)] lg:gap-6">
-        <div className="flex min-h-[min(60vh,calc(100dvh-18rem))] flex-col rounded-2xl border border-border bg-card lg:min-h-[calc(100dvh-14rem)]">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2.5 sm:px-6">
+    <div className="flex w-full min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="shrink-0">
+        <StageHeader stage="discover" />
+      </div>
+      <div className="grid w-full min-h-0 flex-1 gap-4 overflow-hidden lg:grid-cols-[minmax(0,1fr)_min(18rem,22rem)] lg:gap-6">
+        <div className="flex min-h-[min(60vh,calc(100dvh-18rem))] flex-col overflow-hidden rounded-2xl border border-border bg-card lg:h-full lg:min-h-0">
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2.5 sm:px-6">
             <p className="text-xs text-muted-foreground">
               Discovery chat · model applies to new messages
             </p>
@@ -160,30 +219,60 @@ export function DiscoveryChat({
           </div>
           <div
             ref={scrollRef}
-            className="flex-1 space-y-4 overflow-y-auto p-4 sm:space-y-5 sm:p-6"
+            className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:space-y-5 sm:p-6"
           >
-            {messages.map((m) => (
-              <div
-                key={m.id}
-                className={
-                  m.role === "user" ? "flex justify-end" : "flex justify-start"
-                }
-              >
-                <div
-                  className={
-                    m.role === "user"
-                      ? "max-w-[min(100%,36rem)] rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-sm text-primary-foreground sm:max-w-[85%]"
-                      : "max-w-[min(100%,36rem)] rounded-2xl rounded-bl-sm bg-secondary px-4 py-2.5 text-sm leading-relaxed text-foreground sm:max-w-[85%]"
-                  }
-                >
-                  {textOf(m) || (
-                    <span className="inline-flex items-center gap-1 text-muted-foreground">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> thinking…
-                    </span>
-                  )}
+            {messages.map((m, index) => {
+              const text = textOf(m)
+              const isLast = index === messages.length - 1
+              const showCta =
+                showInlineGenerate && isLast && m.role === "assistant"
+
+              if (m.role === "user") {
+                return (
+                  <div key={m.id} className="flex justify-end">
+                    <div className="max-w-[min(100%,36rem)] rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-sm text-primary-foreground sm:max-w-[85%]">
+                      {text}
+                    </div>
+                  </div>
+                )
+              }
+
+              return (
+                <div key={m.id} className="flex justify-start">
+                  <div className="flex max-w-[min(100%,36rem)] flex-col items-start gap-2 sm:max-w-[85%]">
+                    <div className="rounded-2xl rounded-bl-sm bg-secondary px-4 py-2.5 text-sm leading-relaxed text-foreground">
+                      {text || (
+                        <span className="inline-flex items-center gap-1 text-muted-foreground">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> thinking…
+                        </span>
+                      )}
+                    </div>
+                    {showCta && (
+                      <div className="flex w-full flex-col gap-2 pl-1">
+                        <Button
+                          onClick={generate}
+                          disabled={generating}
+                          className="h-10 w-full rounded-full sm:w-auto sm:min-w-[14rem]"
+                        >
+                          {generating ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" /> Generating…
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-4 w-4" /> Generate requirements
+                            </>
+                          )}
+                        </Button>
+                        {error && (
+                          <p className="text-xs text-warning">{error}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
             {busy && messages[messages.length - 1]?.role === "user" && (
               <div className="flex justify-start">
                 <div className="rounded-2xl rounded-bl-sm bg-secondary px-4 py-2.5 text-sm text-muted-foreground">
@@ -203,7 +292,7 @@ export function DiscoveryChat({
             )}
           </div>
 
-          <div className="border-t border-border p-3 sm:p-4">
+          <div className="shrink-0 border-t border-border p-3 sm:p-4">
             <DiscoveryUploadZone
               onAdd={(m) => setMaterials((prev) => [...prev, m])}
               disabled={busy}
@@ -235,7 +324,7 @@ export function DiscoveryChat({
           </div>
         </div>
 
-        <aside className="flex w-full flex-col gap-4">
+        <aside className="flex min-h-0 w-full flex-col gap-4 overflow-y-auto lg:max-h-full">
           <DiscoveryMaterialsPanel
             materials={materials}
             onMaterialsChange={setMaterials}
@@ -259,7 +348,7 @@ export function DiscoveryChat({
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-4 w-4" /> Finish discovery
+                  <Sparkles className="h-4 w-4" /> Generate requirements
                 </>
               )}
             </Button>
