@@ -144,7 +144,7 @@ function RegenerateDesignSection() {
         </div>
       ) : (
         <div className="space-y-4">
-          <p className="text-sm text-warning">
+          <p className="text-sm text-alert-text">
             This will replace your current user flows, screen inventory, and
             schema blueprint with a fresh version based on your Define must-haves
             and Discover requirements. Edits to screen purposes will be lost.
@@ -176,7 +176,7 @@ function RegenerateDesignSection() {
           </div>
         </div>
       )}
-      {error && <p className="mt-3 text-sm text-warning">{error}</p>}
+      {error && <p className="mt-3 text-sm text-alert-text">{error}</p>}
     </section>
   )
 }

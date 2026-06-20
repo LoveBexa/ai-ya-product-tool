@@ -118,7 +118,7 @@ export function OverviewDashboard() {
           className="h-auto rounded-xl border-border/40 bg-transparent px-2 py-1.5 text-2xl font-semibold leading-tight tracking-tight shadow-none focus-visible:bg-card focus-visible:ring-1 focus-visible:ring-ring/40 sm:text-3xl"
         />
         {titleError && (
-          <p className="mt-1 px-2 text-xs text-warning">{titleError}</p>
+          <p className="mt-1 px-2 text-xs text-alert-text">{titleError}</p>
         )}
         <p className="mt-1 px-2 text-sm text-muted-foreground">
           {bundle.project.idea}
@@ -168,7 +168,7 @@ export function OverviewDashboard() {
               </button>
             )}
             {planError && (
-              <p className="mt-2 text-xs text-warning">{planError}</p>
+              <p className="mt-2 text-xs text-alert-text">{planError}</p>
             )}
           </>
         )}

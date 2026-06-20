@@ -72,7 +72,7 @@ export function IdeaIntake({
         placeholder="e.g. A marketplace where dog owners find trusted local walkers…"
         className="mt-3"
       />
-      {error && <p className="mt-2 text-sm text-warning">{error}</p>}
+      {error && <p className="mt-2 text-sm text-alert-text">{error}</p>}
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <Button onClick={submit} disabled={pending || atProjectLimit} className="flex-1">
           {pending ? (

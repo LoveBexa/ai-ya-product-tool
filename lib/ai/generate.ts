@@ -25,8 +25,19 @@ import {
 import type { ProductDesign } from "@/lib/types/design"
 import { assembleBlueprintPromptContext } from "./blueprint-context"
 import type { SchemaBlueprint } from "@/lib/design/schema-blueprint"
+import { withQuotaRetry } from "./quota-retry"
 
-const GEN_OPTS = { maxRetries: 1 } as const
+const GEN_OPTS = { maxRetries: 0 } as const
+
+async function generateStructured(
+  params: Omit<Parameters<typeof generateText>[0], "maxRetries">,
+  retry?: { maxAttempts?: number },
+) {
+  return withQuotaRetry(
+    () => generateText({ ...GEN_OPTS, ...params }),
+    retry,
+  )
+}
 
 function transcript(messages: ChatMessage[]) {
   return messages
@@ -46,8 +57,7 @@ export async function generateRequirements(
   messages: ChatMessage[],
   idea: string,
 ): Promise<RequirementsDraft> {
-  const { output } = await generateText({
-    ...GEN_OPTS,
+  const { output } = await generateStructured({
     model: BA_MODEL,
     system: REQUIREMENTS_SYSTEM,
     prompt: `Initial idea: "${idea}"\n\nDiscovery conversation:\n${transcript(messages)}\n\nWrite the requirements brief.`,
@@ -69,8 +79,7 @@ const featuresSchema = z.object({
 export async function generateFeatures(
   req: RequirementsDraft,
 ): Promise<FeatureDraft[]> {
-  const { output } = await generateText({
-    ...GEN_OPTS,
+  const { output } = await generateStructured({
     model: BA_MODEL,
     system: FEATURES_SYSTEM,
     prompt: `Requirements brief:
@@ -102,8 +111,7 @@ export async function generateDiscoveryBundle(
   messages: ChatMessage[],
   idea: string,
 ): Promise<{ requirements: RequirementsDraft; features: FeatureDraft[] }> {
-  const { output } = await generateText({
-    ...GEN_OPTS,
+  const { output } = await generateStructured({
     model: BA_MODEL,
     system: DISCOVERY_OUTPUT_SYSTEM,
     prompt: `Initial idea: "${idea}"\n\nDiscovery conversation:\n${transcript(messages)}\n\nWrite the requirements brief and prioritized MVP feature list.`,
@@ -134,8 +142,7 @@ export async function generateQueueItem(
   featureReasoning: string,
   req: RequirementsDraft,
 ): Promise<QueueItemResult> {
-  const { output } = await generateText({
-    ...GEN_OPTS,
+  const { output } = await generateStructured({
     model: BA_MODEL,
     system: QUEUE_SYSTEM,
     prompt: `Product context — Solution: ${req.solution}. Audience: ${req.audience}.
@@ -203,18 +210,20 @@ export async function generateBlueprintBatch(
     schema: input.schemaBlueprint,
   })
 
-  const { output } = await generateText({
-    ...GEN_OPTS,
-    model: BA_MODEL,
-    system: QUEUE_BATCH_SYSTEM,
-    prompt: `${context}
+  const { output } = await generateStructured(
+    {
+      model: BA_MODEL,
+      system: QUEUE_BATCH_SYSTEM,
+      prompt: `${context}
 
 Must-have MVP features (return exactly one card per feature, using exact feature_name):
 ${mustList}
 
 Produce the complete blueprint: foundation_prompt + one execution card per must-have.`,
-    output: Output.object({ schema: blueprintBatchSchema }),
-  })
+      output: Output.object({ schema: blueprintBatchSchema }),
+    },
+    { maxAttempts: 4 },
+  )
 
   const items = output.cards.map((card) => ({
     title: card.feature_name,
@@ -246,8 +255,7 @@ export async function generateFoundationPrompt(
     .map((f) => `- ${f.name}: ${f.reasoning}`)
     .join("\n")
 
-  const { output } = await generateText({
-    ...GEN_OPTS,
+  const { output } = await generateStructured({
     model: BA_MODEL,
     system: FOUNDATION_SYSTEM,
     prompt: `Requirements brief:
@@ -299,8 +307,7 @@ export async function generateDesign(
     .map((f) => `- ${f.name}: ${f.reasoning}`)
     .join("\n")
 
-  const { output } = await generateText({
-    ...GEN_OPTS,
+  const { output } = await generateStructured({
     model: BA_MODEL,
     system: DESIGN_SYSTEM,
     prompt: `Product idea: "${idea}"

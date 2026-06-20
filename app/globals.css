@@ -35,6 +35,7 @@
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-alert-text: var(--alert-text);
 
   --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
@@ -94,6 +95,8 @@
 
   --warning: oklch(0.8 0.13 75);
   --warning-foreground: oklch(0.32 0.06 70);
+  /* Legible error / alert copy on light backgrounds */
+  --alert-text: oklch(0.38 0.12 25);
 }
 
 * {

@@ -39,7 +39,7 @@ export function StageGeneratePanel({
         </p>
 
         {error && (
-          <p className="mx-auto mt-4 max-w-md text-sm text-warning">{error}</p>
+          <p className="mx-auto mt-4 max-w-md text-sm text-alert-text">{error}</p>
         )}
 
         <div className="mt-8 flex justify-center">

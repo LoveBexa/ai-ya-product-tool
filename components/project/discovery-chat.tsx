@@ -282,7 +282,7 @@ export function DiscoveryChat() {
                           )}
                         </Button>
                         {error && (
-                          <p className="text-xs text-warning">{error}</p>
+                          <p className="text-xs text-alert-text">{error}</p>
                         )}
                       </div>
                     )}
@@ -298,7 +298,7 @@ export function DiscoveryChat() {
               </div>
             )}
             {chatError && (
-              <p className="rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
+              <p className="rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-alert-text">
                 {chatError.message || "Chat request failed. Check your API key and restart the dev server."}
               </p>
             )}
@@ -358,7 +358,7 @@ export function DiscoveryChat() {
                 </>
               )}
             </Button>
-            {error && <p className="mt-2 text-xs text-warning">{error}</p>}
+            {error && <p className="mt-2 text-xs text-alert-text">{error}</p>}
           </div>
 
           <DiscoveryMaterialsPanel

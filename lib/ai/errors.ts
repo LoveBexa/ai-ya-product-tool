@@ -1,17 +1,21 @@
 /** Turn raw AI provider errors into actionable messages for the UI. */
+import {
+  isQuotaError,
+  parseRetryAfterSeconds,
+} from "@/lib/ai/quota-retry"
+
 export function formatAiError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error)
 
-  if (/quota|rate.?limit|429|resource.?exhausted|exceeded your current quota/i.test(message)) {
-    const waitMatch = message.match(/retry in ([\d.]+)s/i)
-    const waitHint = waitMatch
-      ? ` Try again in about ${Math.ceil(Number(waitMatch[1]))} seconds.`
-      : " Wait a minute and try again."
+  if (isQuotaError(message)) {
+    const hinted = parseRetryAfterSeconds(message)
+    const waitHint = hinted
+      ? ` Wait at least ${hinted + 10} seconds before retrying (Google estimated ${hinted}s — add a little buffer). If it still fails, wait a full minute; free tier limits are per-minute.`
+      : " Wait 60 seconds before trying again — free tier limits reset each minute."
 
     return (
       `Gemini free-tier limit hit for this model.${waitHint} ` +
-      `You can switch GOOGLE_MODEL to gemini-2.0-flash in .env.local (separate quota), ` +
-      `pace chat messages, or enable billing at https://ai.google.dev/pricing`
+      `Use gemini-2.0-flash in .env.local for a separate quota, pace discovery chat, or see https://ai.google.dev/pricing`
     )
   }
 
