@@ -23,6 +23,8 @@ import {
   type DesignDraft,
 } from "@/lib/design/hydrate-design"
 import type { ProductDesign } from "@/lib/types/design"
+import { assembleBlueprintPromptContext } from "./blueprint-context"
+import type { SchemaBlueprint } from "@/lib/design/schema-blueprint"
 
 const GEN_OPTS = { maxRetries: 1 } as const
 
@@ -171,6 +173,15 @@ const blueprintBatchSchema = z.object({
   ),
 })
 
+export interface BlueprintBatchInput {
+  idea: string
+  req: RequirementsDraft
+  mustFeatures: FeatureDraft[]
+  allFeatures: Feature[]
+  design: ProductDesign
+  schemaBlueprint: SchemaBlueprint
+}
+
 export interface BlueprintBatchResult {
   foundation_prompt: string
   items: QueueItemResult[]
@@ -178,23 +189,30 @@ export interface BlueprintBatchResult {
 
 /** All must-have execution cards + foundation prompt in one API call. */
 export async function generateBlueprintBatch(
-  req: RequirementsDraft,
-  mustFeatures: FeatureDraft[],
+  input: BlueprintBatchInput,
 ): Promise<BlueprintBatchResult> {
-  const featureList = mustFeatures
+  const mustList = input.mustFeatures
     .map((f) => `- ${f.name}: ${f.reasoning}`)
     .join("\n")
+
+  const context = assembleBlueprintPromptContext({
+    idea: input.idea,
+    req: input.req,
+    allFeatures: input.allFeatures,
+    design: input.design,
+    schema: input.schemaBlueprint,
+  })
 
   const { output } = await generateText({
     ...GEN_OPTS,
     model: BA_MODEL,
     system: QUEUE_BATCH_SYSTEM,
-    prompt: `Product context — Solution: ${req.solution}. Audience: ${req.audience}. Problem: ${req.problem}.
+    prompt: `${context}
 
 Must-have MVP features (return exactly one card per feature, using exact feature_name):
-${featureList}
+${mustList}
 
-Produce all execution specs plus the foundation scaffolding prompt.`,
+Produce the complete blueprint: foundation_prompt + one execution card per must-have.`,
     output: Output.object({ schema: blueprintBatchSchema }),
   })
 

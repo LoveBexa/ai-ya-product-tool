@@ -73,24 +73,4 @@ create index if not exists idx_features_project on features(project_id);
 create index if not exists idx_cards_project    on cards(project_id);
 create index if not exists idx_cards_feature    on cards(feature_id);
 
--- ---- If you already created these tables, add the helper columns: ----
--- alter table projects add column if not exists stage text not null default 'discovery'
---   check (stage in ('discovery','requirements','mvp','tasks'));
--- alter table projects add column if not exists chat jsonb not null default '[]'::jsonb;
--- alter table features add column if not exists sort_order int not null default 0;
--- alter table cards    add column if not exists sort_order int not null default 0;
--- alter table cards alter column feature_id drop not null;
--- alter table cards add column if not exists card_type text not null default 'feature'
---   check (card_type in ('blueprint','feature'));
--- alter table cards add column if not exists how_to_build text not null default '';
--- alter table cards add column if not exists how_to_test text not null default '';
--- alter table cards add column if not exists user_journey text not null default '';
--- alter table cards add column if not exists success_criteria text[] not null default '{}';
--- alter table cards add column if not exists deferred_stages text[] not null default '{}';
--- alter table cards add column if not exists screens text[] not null default '{}';
--- alter table cards add column if not exists acceptance_criteria text[] not null default '{}';
--- alter table cards add column if not exists test_steps text[] not null default '{}';
--- alter table cards add column if not exists dependencies text[] not null default '{}';
--- alter table projects add column if not exists foundation_prompt text not null default '';
--- alter table projects add column if not exists product_design jsonb;
--- alter table features add column if not exists verify text not null default '';
+-- ---- Existing DB? Run scripts/migrations/migrate-all.sql once ----

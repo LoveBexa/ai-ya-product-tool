@@ -1,16 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
-import { ChevronLeft, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { generateAndSaveDesign } from "@/app/actions/projects"
 import { formatAiError } from "@/lib/ai/errors"
-import {
-  projectPath,
-  STOP_LABEL,
-  type JourneyStop,
-} from "@/lib/journey/navigation"
+import { getDesignGenerateBlocker } from "@/lib/journey/prerequisites"
+import type { JourneyStop } from "@/lib/journey/navigation"
 import { useProject } from "./project-context"
+import { StageGeneratePanel } from "./stage-generate-panel"
 import { DisclosureSection } from "./disclosure-section"
 import { FlowChain } from "./design-artifacts"
 import { StageHeader } from "./stage-header"
@@ -81,6 +78,106 @@ function ScreenCard({
       )}
       <ArtifactMeta features={features} featureIds={screen.feature_ids} />
     </li>
+  )
+}
+
+function useDesignGeneration() {
+  const { bundle, setBundle } = useProject()
+  const projectId = bundle.project.id
+  const [generating, setGenerating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [goBackTo, setGoBackTo] = useState<JourneyStop | null>(null)
+
+  async function generateDesign() {
+    const blocker = getDesignGenerateBlocker(bundle)
+    if (blocker) {
+      setError(blocker.message)
+      setGoBackTo(blocker.stop)
+      return false
+    }
+
+    setError(null)
+    setGoBackTo(null)
+    setGenerating(true)
+    try {
+      const design = await generateAndSaveDesign(projectId)
+      setBundle((b) => ({
+        ...b,
+        design,
+        project: { ...b.project, product_design: design },
+      }))
+      return true
+    } catch (e) {
+      setError(formatAiError(e))
+      return false
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  return { generating, error, goBackTo, generateDesign, projectId }
+}
+
+function RegenerateDesignSection() {
+  const { generating, error, generateDesign } = useDesignGeneration()
+  const [confirming, setConfirming] = useState(false)
+
+  async function handleRegenerate() {
+    const ok = await generateDesign()
+    if (ok) setConfirming(false)
+  }
+
+  return (
+    <section className="mt-8 rounded-2xl border border-border bg-card/50 p-5 sm:p-6">
+      {!confirming ? (
+        <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-muted-foreground">
+            Flows and screens already generated from your must-haves.
+          </p>
+          <button
+            type="button"
+            onClick={() => setConfirming(true)}
+            className="inline-flex h-10 shrink-0 items-center justify-center rounded-full border border-border bg-card px-5 text-sm font-medium transition-colors hover:bg-secondary"
+          >
+            Re-generate design flows
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <p className="text-sm text-warning">
+            This will replace your current user flows, screen inventory, and
+            schema blueprint with a fresh version based on your Define must-haves
+            and Discover requirements. Edits to screen purposes will be lost.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handleRegenerate}
+              disabled={generating}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-mint px-5 text-sm font-semibold text-mint-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Re-generating…
+                </>
+              ) : (
+                "Yes, re-generate"
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              disabled={generating}
+              className="inline-flex h-10 items-center justify-center rounded-full border border-border px-5 text-sm font-medium transition-colors hover:bg-secondary disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+      {error && <p className="mt-3 text-sm text-warning">{error}</p>}
+    </section>
   )
 }
 
@@ -160,96 +257,32 @@ export function DesignView({
           <SchemaBlueprintPanel blueprint={schemaBlueprint} />
         </DisclosureSection>
       </div>
+
+      <RegenerateDesignSection />
     </div>
   )
 }
 
-function designPrerequisiteStop(
-  requirements: unknown,
-  features: { priority: string }[],
-): JourneyStop | null {
-  if (!requirements) return "discover"
-  if (!features.some((f) => f.priority === "must")) return "define"
-  return null
-}
-
 export function DesignPlaceholder() {
-  const { bundle, setBundle } = useProject()
-  const projectId = bundle.project.id
-  const [generating, setGenerating] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [goBackTo, setGoBackTo] = useState<JourneyStop | null>(null)
+  const { generating, error, goBackTo, generateDesign, projectId } =
+    useDesignGeneration()
 
   async function handleCreateDesignFlows() {
-    const missing = designPrerequisiteStop(bundle.requirements, bundle.features)
-    if (missing) {
-      setError(
-        missing === "discover"
-          ? "Finish Discover first — generate requirements before creating design flows."
-          : "Add at least one Must Have feature on Define before creating design flows.",
-      )
-      setGoBackTo(missing)
-      return
-    }
-
-    setError(null)
-    setGoBackTo(null)
-    setGenerating(true)
-    try {
-      const design = await generateAndSaveDesign(projectId)
-      setBundle((b) => ({
-        ...b,
-        design,
-        project: { ...b.project, product_design: design },
-      }))
-    } catch (e) {
-      setError(formatAiError(e))
-    } finally {
-      setGenerating(false)
-    }
+    await generateDesign()
   }
 
   return (
-    <div className="w-full">
-      <StageHeader stage="design" />
-      <div className="rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center sm:p-12">
-        <p className="text-sm font-medium">Preparing your design</p>
-        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-          Flows and a screen inventory from your must-haves will appear here.
-        </p>
-
-        {error && (
-          <p className="mx-auto mt-4 max-w-md text-sm text-warning">{error}</p>
-        )}
-
-        <div className="mt-8 flex justify-center">
-          {goBackTo ? (
-            <Link
-              href={projectPath(projectId, goBackTo)}
-              className="inline-flex h-12 min-w-[220px] items-center justify-center gap-2 rounded-full border border-border bg-card px-8 text-sm font-semibold transition-colors hover:bg-secondary"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Back to {STOP_LABEL[goBackTo]}
-            </Link>
-          ) : (
-            <button
-              type="button"
-              onClick={handleCreateDesignFlows}
-              disabled={generating}
-              className="inline-flex h-12 min-w-[220px] items-center justify-center gap-2 rounded-full bg-mint px-8 text-sm font-semibold text-mint-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
-            >
-              {generating ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Creating flows…
-                </>
-              ) : (
-                "Create design flows"
-              )}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+    <StageGeneratePanel
+      stage="design"
+      title="Preparing your design"
+      description="Flows and a screen inventory from your must-haves will appear here."
+      actionLabel="Create design flows"
+      generatingLabel="Creating flows…"
+      generating={generating}
+      error={error}
+      goBackTo={goBackTo}
+      projectId={projectId}
+      onAction={handleCreateDesignFlows}
+    />
   )
 }

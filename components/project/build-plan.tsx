@@ -26,7 +26,9 @@ import {
 import type { SchemaBlueprint } from "@/lib/design/schema-blueprint"
 import { cn } from "@/lib/utils"
 import type { Feature, Requirements, TaskCard } from "@/lib/types"
+import type { ProductDesign } from "@/lib/types/design"
 import { SchemaBlueprintPanel } from "./schema-blueprint-panel"
+import { FlowChain } from "./design-artifacts"
 
 function reorderIds(ids: string[], from: number, to: number): string[] {
   const next = [...ids]
@@ -41,6 +43,7 @@ export function BuildPlan({
   requirements,
   features,
   cards,
+  design,
   schemaBlueprint,
   foundationPrompt,
   onFeaturesChange,
@@ -52,6 +55,7 @@ export function BuildPlan({
   requirements: Requirements | null
   features: Feature[]
   cards: TaskCard[]
+  design: ProductDesign | null
   schemaBlueprint: SchemaBlueprint | null
   foundationPrompt: string
   onFeaturesChange: (features: Feature[]) => void
@@ -63,6 +67,14 @@ export function BuildPlan({
       features
         .filter((f) => f.priority === "must")
         .sort((a, b) => a.sort_order - b.sort_order),
+    [features],
+  )
+  const laterFeatures = useMemo(
+    () => features.filter((f) => f.priority === "nice"),
+    [features],
+  )
+  const ignoreFeatures = useMemo(
+    () => features.filter((f) => f.priority === "ignore"),
     [features],
   )
 
@@ -82,11 +94,13 @@ export function BuildPlan({
       projectTitle,
       requirements,
       mustFeatures,
+      allFeatures: features,
+      design,
       schemaBlueprint,
       foundationPrompt,
       cards,
     })
-  }, [projectTitle, requirements, mustFeatures, schemaBlueprint, foundationPrompt, cards])
+  }, [projectTitle, requirements, mustFeatures, features, design, schemaBlueprint, foundationPrompt, cards])
 
   async function persistOrder(nextIds: string[]) {
     const reordered = nextIds.map((id, index) => {
@@ -146,19 +160,7 @@ export function BuildPlan({
   }
 
   if (!requirements) {
-    return (
-      <div className="rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center text-sm text-muted-foreground">
-        Finish discovery and define your MVP before creating your blueprint.
-      </div>
-    )
-  }
-
-  if (mustFeatures.length === 0) {
-    return (
-      <div className="rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center text-sm text-muted-foreground">
-        Mark at least one feature as Must Have to generate blueprint steps.
-      </div>
-    )
+    return null
   }
 
   return (
@@ -216,10 +218,61 @@ export function BuildPlan({
             ))}
           </ul>
         </div>
+        {(laterFeatures.length > 0 || ignoreFeatures.length > 0) && (
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {laterFeatures.length > 0 && (
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Later
+                </p>
+                <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+                  {laterFeatures.map((f) => (
+                    <li key={f.id}>· {f.name}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {ignoreFeatures.length > 0 && (
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Ignore
+                </p>
+                <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+                  {ignoreFeatures.map((f) => (
+                    <li key={f.id}>· {f.name}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
+      {design && (
+        <section className="mb-8 rounded-2xl border border-border bg-card p-5 sm:p-6">
+          <h3 className="text-sm font-semibold">2. User flows &amp; screens</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            From Design — how people move through the app and which screens each step uses.
+          </p>
+          <div className="mt-4">
+            <FlowChain steps={design.user_flow.map((s) => s.label)} />
+          </div>
+          <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+            {design.screens.map((screen) => (
+              <li
+                key={screen.id}
+                className="rounded-xl border border-border bg-secondary/20 px-3 py-2.5 text-sm"
+              >
+                <span className="font-semibold">{screen.name}</span>
+                <span className="text-muted-foreground"> — {screen.purpose}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="mb-8 rounded-2xl border border-border bg-card p-5 sm:p-6">
-        <h3 className="text-sm font-semibold">2. Schema blueprint</h3>
+        <h3 className="text-sm font-semibold">{design ? "3. Schema blueprint" : "2. Schema blueprint"}</h3>
         <p className="mt-1 text-xs text-muted-foreground">
           Auto-derived from Design — user flows, screens, and MVP features. This
           is what you prompt your AI builder with before writing feature code.
@@ -238,7 +291,9 @@ export function BuildPlan({
 
       <section className="mb-8 rounded-2xl border border-border bg-card p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold">3. Foundation step</h3>
+          <h3 className="text-sm font-semibold">
+            {design ? "4. Foundation step" : "3. Foundation step"}
+          </h3>
           {!foundationPrompt.trim() && (
             <Button
               type="button"
@@ -269,7 +324,9 @@ export function BuildPlan({
       </section>
 
       <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-        <h3 className="text-sm font-semibold">4. Feature steps</h3>
+        <h3 className="text-sm font-semibold">
+          {design ? "5. Feature steps" : "4. Feature steps"}
+        </h3>
         <p className="mt-1 text-xs text-muted-foreground">
           Drag to set order in your blueprint. Order is saved to the project.
         </p>
@@ -316,11 +373,49 @@ export function BuildPlan({
 
                     {featureCards.length === 0 ? (
                       <p className="text-sm text-muted-foreground">
-                        Generate cards from Overview to populate feature prompts.
+                        No feature cards yet — regenerate from Overview if needed.
                       </p>
                     ) : (
                       featureCards.map((card) => (
-                        <div key={card.id} className="space-y-2">
+                        <div key={card.id} className="space-y-3 rounded-xl border border-border/60 bg-secondary/10 p-3">
+                          {card.goal && (
+                            <div>
+                              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                Goal
+                              </p>
+                              <p className="mt-1 text-sm">{card.goal}</p>
+                            </div>
+                          )}
+                          {card.how_to_build && (
+                            <div>
+                              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                How to build
+                              </p>
+                              <p className="mt-1 text-sm text-muted-foreground">
+                                {card.how_to_build}
+                              </p>
+                            </div>
+                          )}
+                          {card.screens.length > 0 && (
+                            <div>
+                              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                Screens
+                              </p>
+                              <p className="mt-1 text-sm">{card.screens.join(", ")}</p>
+                            </div>
+                          )}
+                          {card.acceptance_criteria.length > 0 && (
+                            <div>
+                              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                Acceptance criteria
+                              </p>
+                              <ul className="mt-1 list-inside list-disc text-sm text-muted-foreground">
+                                {card.acceptance_criteria.map((ac) => (
+                                  <li key={ac}>{ac}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                               Feature prompt

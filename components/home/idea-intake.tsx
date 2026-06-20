@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation"
 import { Loader2, MessageCircle, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { TierLimitNotice } from "@/components/billing/tier-notice"
 import { createProject } from "@/app/actions/projects"
+import type { TierUsageSnapshot } from "@/app/actions/billing"
 
 const EXAMPLES = [
   "A tool that helps freelancers turn messy client notes into clean project briefs",
@@ -13,13 +15,19 @@ const EXAMPLES = [
   "A marketplace connecting home cooks with neighbors who want fresh meals",
 ]
 
-export function IdeaIntake() {
+export function IdeaIntake({
+  tierUsage,
+}: {
+  tierUsage?: TierUsageSnapshot | null
+}) {
   const router = useRouter()
   const [idea, setIdea] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+  const atProjectLimit = tierUsage != null && !tierUsage.canCreateProject
 
   function submit() {
+    if (atProjectLimit) return
     const value = idea.trim()
     if (value.length < 8) {
       setError("Tell me a little more about your idea (at least a sentence).")
@@ -47,6 +55,12 @@ export function IdeaIntake() {
         Tell us about your idea — chat with AIYA, or bring notes and screenshots
         you&apos;ve already created.
       </p>
+      {atProjectLimit && tierUsage?.projectLimitMessage && (
+        <TierLimitNotice
+          message={tierUsage.projectLimitMessage}
+          className="mt-4"
+        />
+      )}
       <Textarea
         id="idea"
         value={idea}
@@ -60,7 +74,7 @@ export function IdeaIntake() {
       />
       {error && <p className="mt-2 text-sm text-warning">{error}</p>}
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-        <Button onClick={submit} disabled={pending} className="flex-1">
+        <Button onClick={submit} disabled={pending || atProjectLimit} className="flex-1">
           {pending ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" /> Starting…
@@ -74,7 +88,7 @@ export function IdeaIntake() {
         <Button
           type="button"
           variant="outline"
-          disabled={pending}
+          disabled={pending || atProjectLimit}
           className="flex-1"
           onClick={submit}
         >

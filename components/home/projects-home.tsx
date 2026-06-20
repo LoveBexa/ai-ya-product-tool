@@ -1,29 +1,48 @@
 import Link from "next/link"
 import { AppShell } from "@/components/app-shell"
 import { IdeaIntake } from "@/components/home/idea-intake"
+import { TierLimitNotice, TierPlanBadge } from "@/components/billing/tier-notice"
 import { StageBadge } from "@/components/stage-badge"
 import { SetupNotice } from "@/components/setup-notice"
+import type { TierUsageSnapshot } from "@/app/actions/billing"
 import type { Project } from "@/lib/types"
 
 export function ProjectsHome({
   configured,
   projects,
   loadError,
+  tierUsage,
 }: {
   configured: boolean
   projects: Project[]
   loadError: string | null
+  tierUsage: TierUsageSnapshot | null
 }) {
   return (
     <AppShell>
       <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-16">
         {!configured && <SetupNotice className="mb-8" />}
-        <IdeaIntake />
+        {tierUsage && (
+          <div className="mb-6 flex justify-center">
+            <TierPlanBadge
+              tierLabel={tierUsage.tierLabel}
+              planSummary={tierUsage.planSummary}
+            />
+          </div>
+        )}
+        <IdeaIntake tierUsage={tierUsage} />
 
         <section className="mt-12">
           <h2 className="mb-4 text-lg font-semibold tracking-tight">
             Your <span className="serif-accent">projects</span>
           </h2>
+
+          {tierUsage && !tierUsage.canCreateProject && (
+            <TierLimitNotice
+              message={tierUsage.projectLimitMessage ?? ""}
+              className="mb-4"
+            />
+          )}
 
           {loadError && (
             <p className="rounded-2xl border border-warning/40 bg-warning/10 p-4 text-sm text-warning-foreground">

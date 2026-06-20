@@ -38,7 +38,7 @@ export const STOP_LABEL: Record<JourneyStop, string> = {
 
 /** Primary forward action on each step (bottom-right in phase nav). */
 export const NEXT_STEP_CTA: Partial<Record<JourneyStop, string>> = {
-  define: "Create design flows",
+  define: "Design flows",
 }
 
 export function nextStepLabel(from: JourneyStop, to: JourneyStop): string {

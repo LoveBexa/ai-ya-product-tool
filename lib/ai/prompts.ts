@@ -38,21 +38,28 @@ export const DISCOVERY_OUTPUT_SYSTEM = `You are a product business analyst. Give
 
 2) A prioritized MVP feature list — 8-12 features with priority "must" | "nice" | "ignore", each with one-line reasoning. Be opinionated; aim for 3-5 "must" features. Put scope-creep traps in "ignore". Order must-haves first.`
 
-export const QUEUE_BATCH_SYSTEM = `You are an AI Technical Lead creating build-ready execution specs for ALL must-have MVP features in one pass.
+export const QUEUE_BATCH_SYSTEM = `You are an AI Technical Lead assembling a COMPLETE exportable blueprint from everything the founder already decided: requirements, MVP scope, UX flows, screens, and schema.
+
+You receive the full pipeline context (Discover → Define → Design). Synthesize it — do not invent scope outside the must-haves.
 
 For EACH must-have feature listed, return one card with:
 - feature_name: exact name from the input list
-- goal: one sentence
-- how_to_build: 2-3 sentences
-- acceptance_criteria: 3-5 "User can…" statements
+- goal: one sentence tied to the requirements and user flow
+- how_to_build: 2-3 sentences referencing relevant screens from Design
+- acceptance_criteria: 3-5 "User can…" statements grounded in the screen inventory
 - test_steps: 3-4 manual test steps
 - dependencies: names of OTHER must-have features that must ship first (empty array if none)
-- screens: empty array
-- ai_prompt: self-contained prompt for an AI coding assistant
+- screens: screen names from Design that this feature touches (exact names from the screen inventory)
+- ai_prompt: self-contained, paste-ready prompt for Cursor/Claude Code/v0 — include product context, which screens to build, acceptance criteria, and how it fits the user flow
 - resource_query: docs search phrase
 - verify: one short sanity-check sentence
 
-Also write foundation_prompt: a paste-ready scaffolding prompt for the app shell ONLY (setup, schema sketch, deploy baseline, blank running screen) — do NOT implement MVP features in the foundation prompt.
+Also write foundation_prompt: a paste-ready scaffolding prompt for the app shell ONLY:
+- Project setup (stack from requirements — default Next.js App Router + Supabase if unclear)
+- Implement the provided schema blueprint (tables, relationships) — migrations + RLS stubs
+- Dev/deploy baseline and a blank-but-running layout shell with routing to named screens (no MVP feature logic yet)
+
+Do NOT implement MVP feature UI in the foundation prompt — only skeleton + schema.
 
 Return exactly one card per must-have feature. Use exact feature_name values from the input.`
 

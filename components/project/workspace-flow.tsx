@@ -6,8 +6,12 @@ import { saveProductDesign } from "@/app/actions/projects"
 import { useProject } from "./project-context"
 import { DiscoveryChat } from "./discovery-chat"
 import { DefineBoard } from "./define-board"
+import { DefinePlaceholder } from "./define-placeholder"
 import { DesignView, DesignPlaceholder } from "./design-view"
 import { BuildPlan } from "./build-plan"
+import { BlueprintPlaceholder } from "./blueprint-placeholder"
+import { hasExecutePlan } from "@/lib/journey/status"
+import { isDefineEmpty } from "@/lib/journey/prerequisites"
 import type { ProductDesign } from "@/lib/types/design"
 
 export type FlowView = "discover" | "define" | "design" | "execute"
@@ -46,6 +50,9 @@ export function WorkspaceFlow({ view }: { view: FlowView }) {
   }
 
   if (view === "define") {
+    if (isDefineEmpty(bundle)) {
+      return <DefinePlaceholder />
+    }
     return (
       <DefineBoard
         projectId={projectId}
@@ -86,6 +93,9 @@ export function WorkspaceFlow({ view }: { view: FlowView }) {
   }
 
   if (view === "execute") {
+    if (!hasExecutePlan(bundle)) {
+      return <BlueprintPlaceholder />
+    }
     return (
       <BuildPlan
         projectId={projectId}
@@ -93,6 +103,7 @@ export function WorkspaceFlow({ view }: { view: FlowView }) {
         requirements={requirements}
         features={features}
         cards={bundle.cards}
+        design={design}
         schemaBlueprint={schemaBlueprint}
         foundationPrompt={bundle.project.foundation_prompt ?? ""}
         onFeaturesChange={(feat) =>

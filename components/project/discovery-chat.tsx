@@ -26,6 +26,8 @@ import {
   ChatModelPicker,
   useDiscoverChatModel,
 } from "./chat-model-picker"
+import { StageIncompleteBanner } from "./stage-generate-panel"
+import { getRequirementsGenerateBlocker, isDiscoveryComplete } from "@/lib/journey/prerequisites"
 
 function textOf(m: UIMessage): string {
   return (m.parts ?? [])
@@ -155,6 +157,18 @@ export function DiscoveryChat() {
   }
 
   async function generate() {
+    const blocker = getRequirementsGenerateBlocker({
+      ...bundle,
+      project: { ...bundle.project, chat: messages.map((m) => ({
+        role: m.role === "user" ? "user" as const : "assistant" as const,
+        content: textOf(m),
+      })).filter((m) => m.content.trim()) },
+    })
+    if (blocker) {
+      setError(blocker.message)
+      return
+    }
+
     setError(null)
     setGenerating(true)
     try {
@@ -181,8 +195,6 @@ export function DiscoveryChat() {
     }
   }
 
-  const exchanges = messages.filter((m) => m.role === "user").length
-  const canGenerate = exchanges >= 2 && !busy
   const lastMessage = messages[messages.length - 1]
   const lastAssistantText =
     lastMessage?.role === "assistant" ? textOf(lastMessage) : ""
@@ -193,7 +205,7 @@ export function DiscoveryChat() {
     lastAssistantText.length > 0 &&
     isDiscoveryReadyMessage(lastAssistantText)
 
-  const canGenerateReady = (canGenerate || showInlineGenerate) && !busy
+  const discoveryComplete = isDiscoveryComplete(bundle)
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
@@ -201,8 +213,11 @@ export function DiscoveryChat() {
 
   return (
     <div className="flex w-full min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="shrink-0">
+      <div className="shrink-0 space-y-3">
         <StageHeader stage="discover" />
+        {!discoveryComplete && (
+          <StageIncompleteBanner message="Keep chatting with the analyst until you're ready — then generate requirements to unlock Define." />
+        )}
       </div>
       <div className="grid w-full min-h-0 flex-1 gap-4 overflow-hidden lg:grid-cols-[minmax(0,1fr)_min(18rem,22rem)] lg:gap-6">
         <div className="flex min-h-[min(60vh,calc(100dvh-18rem))] flex-col overflow-hidden rounded-2xl border border-border bg-card lg:h-full lg:min-h-0">
@@ -330,8 +345,8 @@ export function DiscoveryChat() {
           <div className="shrink-0 rounded-2xl border border-border bg-card p-4 sm:p-5">
             <Button
               onClick={generate}
-              disabled={!canGenerateReady || generating}
-              className="h-10 w-full rounded-full"
+              disabled={generating || busy}
+              className="h-12 w-full rounded-full text-sm font-semibold"
             >
               {generating ? (
                 <>
@@ -343,12 +358,6 @@ export function DiscoveryChat() {
                 </>
               )}
             </Button>
-            {!canGenerateReady && !busy && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Answer a couple of questions first, or wait for the analyst to
-                finish.
-              </p>
-            )}
             {error && <p className="mt-2 text-xs text-warning">{error}</p>}
           </div>
 

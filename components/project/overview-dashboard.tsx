@@ -1,11 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowRight, Check, Circle, Loader2, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { generateAndSaveCards, updateProjectTitle } from "@/app/actions/projects"
+import { getTierUsage, type TierUsageSnapshot } from "@/app/actions/billing"
+import { TierLimitNotice } from "@/components/billing/tier-notice"
 import { getJourneySteps, hasExecutePlan } from "@/lib/journey/status"
 import { PIPELINE_STOPS } from "@/lib/journey/navigation"
 import { STAGES } from "@/lib/journey/specialists"
@@ -41,9 +43,23 @@ export function OverviewDashboard() {
   const [generating, setGenerating] = useState(false)
   const [titleError, setTitleError] = useState<string | null>(null)
   const [planError, setPlanError] = useState<string | null>(null)
+  const [tierUsage, setTierUsage] = useState<TierUsageSnapshot | null>(null)
 
   const journey = getJourneySteps(bundle)
   const planReady = hasExecutePlan(bundle)
+  const atBlueprintLimit = tierUsage != null && !tierUsage.canCreateBlueprint
+
+  useEffect(() => {
+    let cancelled = false
+    getTierUsage(projectId)
+      .then((usage) => {
+        if (!cancelled) setTierUsage(usage)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [projectId])
 
   function patchTitle(title: string) {
     setBundle((b) => ({
@@ -67,15 +83,21 @@ export function OverviewDashboard() {
   }
 
   async function generateExecutePlan() {
+    if (atBlueprintLimit) return
     setGenerating(true)
     setPlanError(null)
     try {
-      const { cards, features } = await generateAndSaveCards(projectId)
+      const result = await generateAndSaveCards(projectId)
       setBundle((b) => ({
         ...b,
-        cards,
-        features,
-        project: { ...b.project, stage: "tasks" },
+        cards: result.cards,
+        features: result.features,
+        project: {
+          ...b.project,
+          stage: "tasks",
+          foundation_prompt: result.foundation_prompt,
+          database_schema: result.database_schema,
+        },
       }))
       router.push(`/projects/${projectId}/execute`)
     } catch (e) {
@@ -124,20 +146,27 @@ export function OverviewDashboard() {
         )}
         {!planReady && journey.design === "done" && (
           <>
-            <button
-              type="button"
-              onClick={generateExecutePlan}
-              disabled={generating}
-              className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-            >
-              {generating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  Create blueprint <ArrowRight className="h-4 w-4" />
-                </>
-              )}
-            </button>
+            {atBlueprintLimit && tierUsage?.blueprintLimitMessage ? (
+              <TierLimitNotice
+                message={tierUsage.blueprintLimitMessage}
+                className="mt-5"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={generateExecutePlan}
+                disabled={generating}
+                className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              >
+                {generating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    Create blueprint <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            )}
             {planError && (
               <p className="mt-2 text-xs text-warning">{planError}</p>
             )}

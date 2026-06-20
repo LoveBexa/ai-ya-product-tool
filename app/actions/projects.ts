@@ -10,6 +10,11 @@ import {
   generateBlueprintBatch,
   generateFoundationPrompt,
 } from "@/lib/ai/generate"
+import {
+  screensForFeature,
+  userJourneyForFeature,
+} from "@/lib/ai/blueprint-context"
+import { deriveSchemaBlueprint } from "@/lib/design/schema-blueprint"
 import type { ProductDesign } from "@/lib/types/design"
 import type {
   Project,
@@ -22,6 +27,17 @@ import type {
   RequirementsDraft,
 } from "@/lib/types"
 import { DELETE_CONFIRMATION_PHRASE } from "@/lib/projects/constants"
+import {
+  canCreateBlueprint,
+  canCreateProject,
+  resolveBillingTier,
+  TIER_MESSAGES,
+} from "@/lib/billing/tier"
+import {
+  countBlueprintProjects,
+  countProjects,
+  projectHasBlueprint,
+} from "@/lib/billing/quota.server"
 
 export interface ProjectBundle {
   project: Project
@@ -34,6 +50,12 @@ export interface ProjectBundle {
 /* ---------------------------- Projects ---------------------------- */
 
 export async function createProject(idea: string): Promise<string> {
+  const tier = resolveBillingTier()
+  const projectCount = await countProjects()
+  if (!canCreateProject(tier, projectCount)) {
+    throw new Error(TIER_MESSAGES.projectLimit)
+  }
+
   const db = getSupabaseAdmin()
   const title = idea.trim().slice(0, 120) || "Untitled idea"
   const { data, error } = await db
@@ -565,38 +587,75 @@ export async function updateCardAiPrompt(
 
 /* ------------------------------ Cards ----------------------------- */
 
+export interface BlueprintSaveResult {
+  cards: TaskCard[]
+  features: Feature[]
+  foundation_prompt: string
+  database_schema: string
+}
+
 export async function generateAndSaveCards(
   projectId: string,
-): Promise<{ cards: TaskCard[]; features: Feature[] }> {
+): Promise<BlueprintSaveResult> {
+  const tier = resolveBillingTier()
+  const [blueprintProjects, hasBlueprint] = await Promise.all([
+    countBlueprintProjects(),
+    projectHasBlueprint(projectId),
+  ])
+  if (!canCreateBlueprint(tier, blueprintProjects, hasBlueprint)) {
+    throw new Error(TIER_MESSAGES.blueprintLimit)
+  }
+
   const db = getSupabaseAdmin()
-  const { data: req } = await db
-    .from("requirements")
-    .select("*")
-    .eq("project_id", projectId)
-    .single()
+  const [{ data: projectRow }, { data: req }, { data: allFeaturesData }] =
+    await Promise.all([
+      db.from("projects").select("*").eq("id", projectId).single(),
+      db.from("requirements").select("*").eq("project_id", projectId).single(),
+      db
+        .from("features")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("sort_order", { ascending: true }),
+    ])
+
+  if (!projectRow) throw new Error("Project not found")
   if (!req) throw new Error("Requirements missing")
 
-  const { data: features } = await db
-    .from("features")
-    .select("*")
-    .eq("project_id", projectId)
-    .eq("priority", "must")
-    .order("sort_order", { ascending: true })
+  const project = projectRow as Project
+  const design = project.product_design ?? null
+  if (!design) throw new Error("Design missing — create design flows first")
 
-  const mustFeatures = (features ?? []) as Feature[]
+  const allFeatures = ((allFeaturesData ?? []) as Feature[]).map((f) => ({
+    ...f,
+    verify: f.verify ?? "",
+  }))
+  const mustFeatures = allFeatures.filter((f) => f.priority === "must")
   if (mustFeatures.length === 0)
     throw new Error("Add at least one Must Have feature first")
 
+  const schemaBlueprint = deriveSchemaBlueprint(design, mustFeatures)
+  const database_schema = [
+    schemaBlueprint.markdown.trim(),
+    "",
+    "### AI prompt snippet",
+    "",
+    schemaBlueprint.promptSnippet.trim(),
+  ].join("\n")
+
   await db.from("cards").delete().eq("project_id", projectId)
 
-  const batch = await generateBlueprintBatch(
-    req as RequirementsDraft,
-    mustFeatures.map((f) => ({
+  const batch = await generateBlueprintBatch({
+    idea: project.idea,
+    req: req as RequirementsDraft,
+    mustFeatures: mustFeatures.map((f) => ({
       name: f.name,
       priority: f.priority,
       reasoning: f.reasoning,
     })),
-  )
+    allFeatures,
+    design,
+    schemaBlueprint,
+  })
 
   const itemByName = new Map(
     batch.items.map((item) => [item.title.trim().toLowerCase(), item]),
@@ -613,13 +672,17 @@ export async function generateAndSaveCards(
         `Blueprint generation missed feature "${feature.name}". Try again.`,
       )
     }
+    const designScreens = screensForFeature(design, feature.id)
+    const cardScreens =
+      item.screens.length > 0 ? item.screens : designScreens
+
     rows.push({
       feature_id: feature.id,
       project_id: projectId,
       card_type: "feature",
       title: feature.name,
       goal: item.goal,
-      screens: item.screens ?? [],
+      screens: cardScreens,
       acceptance_criteria: item.acceptance_criteria,
       test_steps: item.test_steps,
       dependencies: item.dependencies ?? [],
@@ -628,8 +691,8 @@ export async function generateAndSaveCards(
       resource_query: item.resource_query,
       how_to_build: item.how_to_build,
       how_to_test: item.test_steps.join(". "),
-      user_journey: "",
-      success_criteria: [],
+      user_journey: userJourneyForFeature(design, feature.id),
+      success_criteria: item.acceptance_criteria,
       deferred_stages: [],
       status: order === 0 ? "in_progress" : "todo",
       sort_order: order++,
@@ -639,7 +702,10 @@ export async function generateAndSaveCards(
 
   await db
     .from("projects")
-    .update({ foundation_prompt: batch.foundation_prompt })
+    .update({
+      foundation_prompt: batch.foundation_prompt,
+      database_schema,
+    })
     .eq("id", projectId)
 
   await Promise.all(
@@ -658,7 +724,14 @@ export async function generateAndSaveCards(
   await persistFeatureOrder(projectId, orderedFeatures)
 
   const { data, error } = await db.from("cards").insert(rows).select("*")
-  if (error) throw new Error(error.message)
+  if (error) {
+    if (/schema cache|could not find the/i.test(error.message)) {
+      throw new Error(
+        "Database schema out of date. Run scripts/migrations/migrate-all.sql in your Supabase SQL editor, then try again.",
+      )
+    }
+    throw new Error(error.message)
+  }
 
   await setStage(projectId, "tasks")
   revalidatePath(`/projects/${projectId}`)
@@ -679,6 +752,8 @@ export async function generateAndSaveCards(
       ...f,
       verify: f.verify ?? "",
     })),
+    foundation_prompt: batch.foundation_prompt,
+    database_schema,
   }
 }
 
