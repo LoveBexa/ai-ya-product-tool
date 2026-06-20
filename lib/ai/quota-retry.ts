@@ -16,26 +16,37 @@ export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-/** Seconds to wait before retry — API hint plus buffer (limits are often sliding windows). */
+export function isVercelServerless(): boolean {
+  return process.env.VERCEL === "1"
+}
+
+/** Seconds to wait before retry — capped on Vercel so functions don't time out. */
 export function quotaRetryDelaySeconds(message: string): number {
   const hinted = parseRetryAfterSeconds(message)
-  if (hinted != null) return hinted + 10
-  return 45
+  const raw = hinted != null ? hinted + 10 : 45
+
+  if (isVercelServerless()) {
+    // Hobby/Pro functions have strict limits — don't sleep 40s+ inside one invocation.
+    return Math.min(raw, 8)
+  }
+
+  return Math.min(raw, 30)
 }
 
 export async function withQuotaRetry<T>(
   fn: () => Promise<T>,
-  { maxAttempts = 3 }: { maxAttempts?: number } = {},
+  { maxAttempts }: { maxAttempts?: number } = {},
 ): Promise<T> {
+  const attempts = maxAttempts ?? (isVercelServerless() ? 2 : 3)
   let lastError: unknown
 
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
     try {
       return await fn()
     } catch (error) {
       lastError = error
       const message = error instanceof Error ? error.message : String(error)
-      const isLast = attempt >= maxAttempts - 1
+      const isLast = attempt >= attempts - 1
 
       if (!isQuotaError(message) || isLast) {
         throw error

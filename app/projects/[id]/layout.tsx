@@ -5,6 +5,9 @@ import { ProjectShell } from "@/components/project/project-shell"
 import { isSupabaseConfigured } from "@/lib/supabase/server"
 import { getProjectBundle } from "@/app/actions/projects"
 
+/** AI server actions (blueprint, design, etc.) can run 30–60s. */
+export const maxDuration = 60
+
 export default async function ProjectLayout({
   children,
   params,

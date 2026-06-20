@@ -1,6 +1,7 @@
 /** Turn raw AI provider errors into actionable messages for the UI. */
 import {
   isQuotaError,
+  isVercelServerless,
   parseRetryAfterSeconds,
 } from "@/lib/ai/quota-retry"
 
@@ -10,7 +11,9 @@ export function formatAiError(error: unknown): string {
   if (isQuotaError(message)) {
     const hinted = parseRetryAfterSeconds(message)
     const waitHint = hinted
-      ? ` Wait at least ${hinted + 10} seconds before retrying (Google estimated ${hinted}s — add a little buffer). If it still fails, wait a full minute; free tier limits are per-minute.`
+      ? isVercelServerless()
+        ? ` Wait a minute, then try again (Google estimated ${hinted}s — auto-retry is limited on hosted deploys).`
+        : ` Wait at least ${hinted + 10} seconds before retrying (Google estimated ${hinted}s — add a little buffer). If it still fails, wait a full minute; free tier limits are per-minute.`
       : " Wait 60 seconds before trying again — free tier limits reset each minute."
 
     return (

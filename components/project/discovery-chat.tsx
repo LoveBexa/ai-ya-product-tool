@@ -128,7 +128,7 @@ export function DiscoveryChat() {
     const chat: ChatMessage[] = messages
       .filter((m) => m.role === "user" || m.role === "assistant")
       .map((m) => ({
-        role: m.role === "user" ? "user" : "assistant",
+        role: (m.role === "user" ? "user" : "assistant") as ChatMessage["role"],
         content: textOf(m).trim(),
       }))
       .filter((m) => m.content.length > 0)

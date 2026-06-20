@@ -27,14 +27,12 @@ import { assembleBlueprintPromptContext } from "./blueprint-context"
 import type { SchemaBlueprint } from "@/lib/design/schema-blueprint"
 import { withQuotaRetry } from "./quota-retry"
 
-const GEN_OPTS = { maxRetries: 0 } as const
-
 async function generateStructured(
-  params: Omit<Parameters<typeof generateText>[0], "maxRetries">,
+  params: Parameters<typeof generateText>[0],
   retry?: { maxAttempts?: number },
 ) {
   return withQuotaRetry(
-    () => generateText({ ...GEN_OPTS, ...params }),
+    () => generateText({ ...params, maxRetries: 0 }),
     retry,
   )
 }
@@ -222,10 +220,12 @@ ${mustList}
 Produce the complete blueprint: foundation_prompt + one execution card per must-have.`,
       output: Output.object({ schema: blueprintBatchSchema }),
     },
-    { maxAttempts: 4 },
+    { maxAttempts: 2 },
   )
 
-  const items = output.cards.map((card) => ({
+  type BlueprintCard = z.infer<typeof blueprintBatchSchema>["cards"][number]
+
+  const items = output.cards.map((card: BlueprintCard) => ({
     title: card.feature_name,
     goal: card.goal,
     screens: card.screens ?? [],

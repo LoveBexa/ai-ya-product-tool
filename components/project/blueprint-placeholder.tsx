@@ -81,7 +81,7 @@ export function BlueprintPlaceholder() {
       title="Your blueprint isn't ready yet"
       description="Pulls together Discover, Define, and Design into one export — spec, flows, schema, foundation prompt, and ordered feature steps."
       actionLabel="Create blueprint"
-      generatingLabel="Creating blueprint… (auto-retries if rate limited)"
+      generatingLabel="Creating blueprint…"
       generating={generating}
       error={error}
       goBackTo={goBackTo}
