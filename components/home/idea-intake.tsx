@@ -2,18 +2,29 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { Loader2, MessageCircle, Upload } from "lucide-react"
+import { Loader2, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { TierLimitNotice } from "@/components/billing/tier-notice"
 import { createProject } from "@/app/actions/projects"
 import type { TierUsageSnapshot } from "@/app/actions/billing"
 
 const EXAMPLES = [
-  "A tool that helps freelancers turn messy client notes into clean project briefs",
-  "A VR app for practicing public speaking in front of a simulated audience",
-  "A marketplace connecting home cooks with neighbors who want fresh meals",
-]
+  {
+    label: "Dog Walking Marketplace",
+    idea:
+      "A marketplace where dog owners find trusted local walkers, book walks, and leave reviews.",
+  },
+  {
+    label: "Public Speaking VR",
+    idea:
+      "A VR app for practicing public speaking in front of a simulated audience with real-time feedback.",
+  },
+  {
+    label: "Home Cook Marketplace",
+    idea:
+      "A marketplace connecting home cooks with neighbors who want fresh meals delivered locally.",
+  },
+] as const
 
 export function IdeaIntake({
   tierUsage,
@@ -47,20 +58,25 @@ export function IdeaIntake({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-[0_8px_30px_-18px_rgba(80,60,140,0.4)] sm:p-7">
-      <label htmlFor="idea" className="text-lg font-semibold tracking-tight">
+    <div className="mx-auto w-full max-w-xl">
+      <h1 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">
         What&apos;s your <span className="serif-accent">idea?</span>
-      </label>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Tell us about your idea — chat with AIYA, or bring notes and screenshots
-        you&apos;ve already created.
-      </p>
-      {atProjectLimit && tierUsage?.projectLimitMessage && (
-        <TierLimitNotice
-          message={tierUsage.projectLimitMessage}
-          className="mt-4"
-        />
-      )}
+      </h1>
+
+      <div className="mt-4 flex flex-wrap justify-center gap-2">
+        {EXAMPLES.map((ex) => (
+          <button
+            key={ex.label}
+            type="button"
+            disabled={atProjectLimit}
+            onClick={() => setIdea(ex.idea)}
+            className="rounded-full border border-border bg-secondary/60 px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-lilac/50 hover:bg-lilac/15 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {ex.label}
+          </button>
+        ))}
+      </div>
+
       <Textarea
         id="idea"
         value={idea}
@@ -68,49 +84,39 @@ export function IdeaIntake({
         onKeyDown={(e) => {
           if ((e.metaKey || e.ctrlKey) && e.key === "Enter") submit()
         }}
-        rows={4}
-        placeholder="e.g. A marketplace where dog owners find trusted local walkers…"
-        className="mt-3"
+        rows={3}
+        placeholder="Describe your app, business or product idea."
+        disabled={atProjectLimit}
+        className="mt-6 min-h-[7rem] resize-none text-base sm:text-lg"
       />
-      {error && <p className="mt-2 text-sm text-alert-text">{error}</p>}
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-        <Button onClick={submit} disabled={pending || atProjectLimit} className="flex-1">
+
+      {error && (
+        <p className="mt-2 text-center text-sm text-alert-text">{error}</p>
+      )}
+
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
+        <Button
+          onClick={submit}
+          disabled={pending || atProjectLimit}
+          className="sm:min-w-[11rem]"
+        >
           {pending ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" /> Starting…
+              <Loader2 className="h-4 w-4 animate-spin" /> Creating…
             </>
           ) : (
-            <>
-              <MessageCircle className="h-4 w-4" /> Start chatting
-            </>
+            "Create Blueprint"
           )}
         </Button>
         <Button
           type="button"
           variant="outline"
           disabled={pending || atProjectLimit}
-          className="flex-1"
+          className="sm:min-w-[11rem]"
           onClick={submit}
         >
-          <Upload className="h-4 w-4" /> Upload notes &amp; screenshots
+          <Upload className="h-4 w-4" /> Upload Material
         </Button>
-      </div>
-      <p className="mt-2 text-center text-[11px] text-muted-foreground">
-        Upload supports chats, sketches, wireframes — add files in Discover after
-        you start.
-      </p>
-
-      <div className="mt-5 flex flex-wrap gap-2">
-        {EXAMPLES.map((ex) => (
-          <button
-            key={ex}
-            type="button"
-            onClick={() => setIdea(ex)}
-            className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-lilac hover:text-lilac-foreground"
-          >
-            {ex}
-          </button>
-        ))}
       </div>
     </div>
   )

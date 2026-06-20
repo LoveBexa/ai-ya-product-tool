@@ -1,11 +1,21 @@
 import Link from "next/link"
 import { AppShell } from "@/components/app-shell"
 import { IdeaIntake } from "@/components/home/idea-intake"
-import { TierLimitNotice, TierPlanBadge } from "@/components/billing/tier-notice"
-import { StageBadge } from "@/components/stage-badge"
+import { TierPlanBadge } from "@/components/billing/tier-notice"
 import { SetupNotice } from "@/components/setup-notice"
+import { cn } from "@/lib/utils"
 import type { TierUsageSnapshot } from "@/app/actions/billing"
 import type { Project } from "@/lib/types"
+
+function relativeCreated(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime()
+  const hours = Math.floor(diffMs / 3_600_000)
+  if (hours < 1) return "Created just now"
+  if (hours < 24) return `Created ${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days === 1) return "Created yesterday"
+  return `Created ${days}d ago`
+}
 
 export function ProjectsHome({
   configured,
@@ -20,61 +30,68 @@ export function ProjectsHome({
 }) {
   return (
     <AppShell>
-      <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-16">
-        {!configured && <SetupNotice className="mb-8" />}
-        {tierUsage && (
-          <div className="mb-6 flex justify-center">
-            <TierPlanBadge
-              tierLabel={tierUsage.tierLabel}
-              planSummary={tierUsage.planSummary}
-            />
-          </div>
-        )}
+      <div className="mx-auto w-full max-w-2xl px-4 py-12 sm:px-6 sm:py-16">
+        {!configured && <SetupNotice className="mb-10" />}
+
+        {tierUsage &&
+          (tierUsage.tier === "paid" || tierUsage.canCreateProject) && (
+            <div className="mb-10 flex justify-center">
+              <TierPlanBadge tierUsage={tierUsage} />
+            </div>
+          )}
+
         <IdeaIntake tierUsage={tierUsage} />
 
-        <section className="mt-12">
-          <h2 className="mb-4 text-lg font-semibold tracking-tight">
-            Your <span className="serif-accent">projects</span>
-          </h2>
-
-          {tierUsage && !tierUsage.canCreateProject && (
-            <TierLimitNotice
-              message={tierUsage.projectLimitMessage ?? ""}
-              className="mb-4"
+        {(loadError || projects.length > 0) && (
+          <>
+            <div
+              className="mt-24 border-t border-border/50 sm:mt-32"
+              aria-hidden
             />
-          )}
 
-          {loadError && (
-            <p className="rounded-2xl border border-warning/40 bg-warning/10 p-4 text-sm text-warning-foreground">
-              {loadError}
-            </p>
-          )}
+            <section className="pt-10 sm:pt-12">
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Your projects
+              </h2>
 
-          {configured && !loadError && projects.length === 0 && (
-            <p className="rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center text-sm text-muted-foreground">
-              No projects yet. Describe an idea above to get started.
-            </p>
-          )}
+              {loadError && (
+                <p className="mt-4 rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm text-warning-foreground">
+                  {loadError}
+                </p>
+              )}
 
-          <ul className="flex flex-col gap-3">
-            {projects.map((p) => (
-              <li key={p.id}>
-                <Link
-                  href={`/projects/${p.id}`}
-                  className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card px-5 py-4 transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-12px_rgba(0,0,0,0.25)]"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{p.title}</p>
-                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                      {p.idea}
-                    </p>
-                  </div>
-                  <StageBadge stage={p.stage} />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
+              {configured && !loadError && projects.length > 0 && (
+                <ul className="mt-5 flex flex-col gap-2">
+                  {projects.map((p) => (
+                    <li key={p.id}>
+                      <div className="flex items-center gap-4 rounded-xl border border-border/80 bg-card/40 px-4 py-3 transition-colors hover:bg-card/80">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">
+                            {p.title}
+                          </p>
+                          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                            {p.idea}
+                          </p>
+                          <p className="mt-1 text-[10px] text-muted-foreground/70">
+                            {relativeCreated(p.created_at)}
+                          </p>
+                        </div>
+                        <Link
+                          href={`/projects/${p.id}`}
+                          className={cn(
+                            "inline-flex h-8 shrink-0 items-center justify-center rounded-full bg-mint px-3.5 text-sm font-medium text-mint-foreground transition-opacity hover:opacity-90",
+                          )}
+                        >
+                          Continue
+                        </Link>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </>
+        )}
       </div>
     </AppShell>
   )

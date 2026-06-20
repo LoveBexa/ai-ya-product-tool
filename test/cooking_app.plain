@@ -1,0 +1,9 @@
+***definitions***
+
+- :App: is a marketplace platform.
+- :Cook: is a user who creates meal listings.
+- :Implementation: should use Next.js.
+
+***test reqs***
+
+- :ConformanceTests: should verify cooks can create listings.
