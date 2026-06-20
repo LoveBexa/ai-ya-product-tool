@@ -73,7 +73,7 @@ export function DiscoveryChat({
     [idea],
   )
 
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status, error: chatError } = useChat({
     id: projectId,
     messages: toInitial(bundle.project.chat ?? []),
     transport,
@@ -90,11 +90,10 @@ export function DiscoveryChat({
   const showAnalysisPreview = materials.length >= 2
 
   useEffect(() => {
-    if (!seeded.current && messages.length === 0) {
-      seeded.current = true
-      sendMessage({ text: idea })
-    }
-  }, [messages.length, idea, sendMessage])
+    if (seeded.current || modelsLoading || !modelId || messages.length > 0) return
+    seeded.current = true
+    sendMessage({ text: idea })
+  }, [messages.length, idea, sendMessage, modelId, modelsLoading])
 
   useEffect(() => {
     if (status !== "ready" || messages.length === 0) return
@@ -111,7 +110,7 @@ export function DiscoveryChat({
 
   function send() {
     const value = input.trim()
-    if (!value || busy || !modelId) return
+    if (!value || busy || modelsLoading) return
     sendMessage({ text: value })
     setInput("")
   }
@@ -192,6 +191,11 @@ export function DiscoveryChat({
                 </div>
               </div>
             )}
+            {chatError && (
+              <p className="rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
+                {chatError.message || "Chat request failed. Check your API key and restart the dev server."}
+              </p>
+            )}
             {showAnalysisPreview && (
               <div className="flex justify-start">
                 <DiscoveryAnalysisMessage />
@@ -221,7 +225,7 @@ export function DiscoveryChat({
               <Button
                 size="icon"
                 onClick={send}
-                disabled={busy || !input.trim() || !modelId || modelsLoading}
+                disabled={busy || !input.trim() || modelsLoading}
                 aria-label="Send"
                 className="shrink-0"
               >

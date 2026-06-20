@@ -1,8 +1,15 @@
 import { createOpenAI } from "@ai-sdk/openai"
+import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { createGateway } from "@ai-sdk/gateway"
 import type { LanguageModel } from "ai"
 
-export type AiProvider = "gateway" | "openai" | "ollama" | "openrouter" | "deepseek"
+export type AiProvider =
+  | "gateway"
+  | "openai"
+  | "google"
+  | "ollama"
+  | "openrouter"
+  | "deepseek"
 
 export interface ChatModelOption {
   id: string
@@ -12,6 +19,7 @@ export interface ChatModelOption {
 const PROVIDERS: AiProvider[] = [
   "gateway",
   "openai",
+  "google",
   "ollama",
   "openrouter",
   "deepseek",
@@ -28,6 +36,11 @@ const CHAT_MODELS: Record<AiProvider, ChatModelOption[]> = {
     { id: "gpt-4o-mini", label: "GPT-4o mini" },
     { id: "gpt-4o", label: "GPT-4o" },
     { id: "gpt-4.1-mini", label: "GPT-4.1 mini" },
+  ],
+  google: [
+    { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+    { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+    { id: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
   ],
   openrouter: [
     { id: "deepseek/deepseek-chat", label: "DeepSeek Chat" },
@@ -62,6 +75,8 @@ export function getDefaultChatModelId(
       return process.env.OLLAMA_MODEL ?? "qwen2.5:14b"
     case "openai":
       return process.env.OPENAI_MODEL ?? "gpt-4o-mini"
+    case "google":
+      return process.env.GOOGLE_MODEL ?? "gemini-2.5-flash"
     case "openrouter":
       return process.env.OPENROUTER_MODEL ?? "openai/gpt-4o-mini"
     case "deepseek":
@@ -123,6 +138,15 @@ export function resolveChatModel(modelId?: string): LanguageModel {
         )
       }
       return createOpenAI({ apiKey })(id)
+    }
+    case "google": {
+      const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY
+      if (!apiKey) {
+        throw new Error(
+          "GOOGLE_GENERATIVE_AI_API_KEY is required when AI_PROVIDER=google.",
+        )
+      }
+      return createGoogleGenerativeAI({ apiKey })(id)
     }
     case "openrouter":
     case "deepseek":
