@@ -32,6 +32,30 @@ Rules:
 - "must" features should be the smallest set that delivers the core value — aim for 3-5 of them.
 - Order features so the most important "must" items come first.`
 
+export const DISCOVERY_OUTPUT_SYSTEM = `You are a product business analyst. Given a discovery conversation, produce BOTH outputs in one response:
+
+1) A requirements brief (audience, problem, solution, revenue_model, success_metric) — each field 1-3 sentences, concrete. success_metric must be one measurable signal.
+
+2) A prioritized MVP feature list — 8-12 features with priority "must" | "nice" | "ignore", each with one-line reasoning. Be opinionated; aim for 3-5 "must" features. Put scope-creep traps in "ignore". Order must-haves first.`
+
+export const QUEUE_BATCH_SYSTEM = `You are an AI Technical Lead creating build-ready execution specs for ALL must-have MVP features in one pass.
+
+For EACH must-have feature listed, return one card with:
+- feature_name: exact name from the input list
+- goal: one sentence
+- how_to_build: 2-3 sentences
+- acceptance_criteria: 3-5 "User can…" statements
+- test_steps: 3-4 manual test steps
+- dependencies: names of OTHER must-have features that must ship first (empty array if none)
+- screens: empty array
+- ai_prompt: self-contained prompt for an AI coding assistant
+- resource_query: docs search phrase
+- verify: one short sanity-check sentence
+
+Also write foundation_prompt: a paste-ready scaffolding prompt for the app shell ONLY (setup, schema sketch, deploy baseline, blank running screen) — do NOT implement MVP features in the foundation prompt.
+
+Return exactly one card per must-have feature. Use exact feature_name values from the input.`
+
 export const QUEUE_SYSTEM = `You are an AI Technical Lead creating ONE build-ready execution card for a single must-have MVP feature.
 
 Return exactly ONE card with:

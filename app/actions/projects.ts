@@ -5,8 +5,9 @@ import { getSupabaseAdmin } from "@/lib/supabase/server"
 import {
   generateRequirements,
   generateFeatures,
+  generateDiscoveryBundle,
   generateDesign,
-  generateQueueItem,
+  generateBlueprintBatch,
   generateFoundationPrompt,
 } from "@/lib/ai/generate"
 import type { ProductDesign } from "@/lib/types/design"
@@ -210,9 +211,43 @@ export async function finishDiscovery(
   idea: string,
   chat: ChatMessage[],
 ): Promise<{ requirements: Requirements; features: Feature[] }> {
-  const requirements = await generateAndSaveRequirements(projectId, idea, chat)
-  const features = await generateAndSaveFeatures(projectId)
-  return { requirements, features }
+  const db = getSupabaseAdmin()
+  await saveChat(projectId, chat)
+
+  const { requirements: draft, features: featureDrafts } =
+    await generateDiscoveryBundle(chat, idea)
+
+  const { data: req, error: reqError } = await db
+    .from("requirements")
+    .upsert({ project_id: projectId, ...draft }, { onConflict: "project_id" })
+    .select("*")
+    .single()
+  if (reqError) throw new Error(reqError.message)
+
+  await db.from("features").delete().eq("project_id", projectId)
+
+  const rows = featureDrafts.map((f, i) => ({
+    project_id: projectId,
+    name: f.name,
+    priority: f.priority,
+    reasoning: f.reasoning,
+    sort_order: i,
+  }))
+  const { data: features, error: featError } = await db
+    .from("features")
+    .insert(rows)
+    .select("*")
+  if (featError) throw new Error(featError.message)
+
+  await setStage(projectId, "mvp")
+  revalidatePath(`/projects/${projectId}`)
+
+  return {
+    requirements: req as Requirements,
+    features: ((features ?? []) as Feature[]).sort(
+      (a, b) => a.sort_order - b.sort_order,
+    ),
+  }
 }
 
 /* ---------------------------- Features ---------------------------- */
@@ -554,15 +589,30 @@ export async function generateAndSaveCards(
 
   await db.from("cards").delete().eq("project_id", projectId)
 
+  const batch = await generateBlueprintBatch(
+    req as RequirementsDraft,
+    mustFeatures.map((f) => ({
+      name: f.name,
+      priority: f.priority,
+      reasoning: f.reasoning,
+    })),
+  )
+
+  const itemByName = new Map(
+    batch.items.map((item) => [item.title.trim().toLowerCase(), item]),
+  )
+
   let order = 0
   const rows: Array<Record<string, unknown>> = []
+  const featureUpdates: Array<{ id: string; verify: string }> = []
 
   for (const feature of mustFeatures) {
-    const item = await generateQueueItem(
-      feature.name,
-      feature.reasoning,
-      req as RequirementsDraft,
-    )
+    const item = itemByName.get(feature.name.trim().toLowerCase())
+    if (!item) {
+      throw new Error(
+        `Blueprint generation missed feature "${feature.name}". Try again.`,
+      )
+    }
     rows.push({
       feature_id: feature.id,
       project_id: projectId,
@@ -584,12 +634,19 @@ export async function generateAndSaveCards(
       status: order === 0 ? "in_progress" : "todo",
       sort_order: order++,
     })
-
-    await db
-      .from("features")
-      .update({ verify: item.verify })
-      .eq("id", feature.id)
+    featureUpdates.push({ id: feature.id, verify: item.verify })
   }
+
+  await db
+    .from("projects")
+    .update({ foundation_prompt: batch.foundation_prompt })
+    .eq("id", projectId)
+
+  await Promise.all(
+    featureUpdates.map(({ id, verify }) =>
+      db.from("features").update({ verify }).eq("id", id),
+    ),
+  )
 
   const orderedFeatures = orderFeaturesByDependencies(
     mustFeatures,

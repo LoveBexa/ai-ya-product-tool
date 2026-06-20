@@ -4,7 +4,9 @@ import { BA_MODEL } from "./model"
 import {
   REQUIREMENTS_SYSTEM,
   FEATURES_SYSTEM,
+  DISCOVERY_OUTPUT_SYSTEM,
   QUEUE_SYSTEM,
+  QUEUE_BATCH_SYSTEM,
   FOUNDATION_SYSTEM,
   DESIGN_SYSTEM,
 } from "./prompts"
@@ -82,6 +84,32 @@ Produce the prioritized MVP feature list.`,
   return output.features
 }
 
+const discoveryBundleSchema = z.object({
+  requirements: requirementsSchema,
+  features: z.array(
+    z.object({
+      name: z.string(),
+      priority: z.enum(["must", "nice", "ignore"]),
+      reasoning: z.string(),
+    }),
+  ),
+})
+
+/** Requirements + MVP features in a single API call. */
+export async function generateDiscoveryBundle(
+  messages: ChatMessage[],
+  idea: string,
+): Promise<{ requirements: RequirementsDraft; features: FeatureDraft[] }> {
+  const { output } = await generateText({
+    ...GEN_OPTS,
+    model: BA_MODEL,
+    system: DISCOVERY_OUTPUT_SYSTEM,
+    prompt: `Initial idea: "${idea}"\n\nDiscovery conversation:\n${transcript(messages)}\n\nWrite the requirements brief and prioritized MVP feature list.`,
+    output: Output.object({ schema: discoveryBundleSchema }),
+  })
+  return { requirements: output.requirements, features: output.features }
+}
+
 const queueItemSchema = z.object({
   title: z.string(),
   goal: z.string(),
@@ -123,6 +151,69 @@ Produce ONE execution spec.`,
     how_to_test: output.test_steps.join(". "),
     verify: output.verify,
   }
+}
+
+const blueprintBatchSchema = z.object({
+  foundation_prompt: z.string(),
+  cards: z.array(
+    z.object({
+      feature_name: z.string(),
+      goal: z.string(),
+      screens: z.array(z.string()),
+      acceptance_criteria: z.array(z.string()),
+      test_steps: z.array(z.string()),
+      dependencies: z.array(z.string()),
+      how_to_build: z.string(),
+      ai_prompt: z.string(),
+      resource_query: z.string(),
+      verify: z.string(),
+    }),
+  ),
+})
+
+export interface BlueprintBatchResult {
+  foundation_prompt: string
+  items: QueueItemResult[]
+}
+
+/** All must-have execution cards + foundation prompt in one API call. */
+export async function generateBlueprintBatch(
+  req: RequirementsDraft,
+  mustFeatures: FeatureDraft[],
+): Promise<BlueprintBatchResult> {
+  const featureList = mustFeatures
+    .map((f) => `- ${f.name}: ${f.reasoning}`)
+    .join("\n")
+
+  const { output } = await generateText({
+    ...GEN_OPTS,
+    model: BA_MODEL,
+    system: QUEUE_BATCH_SYSTEM,
+    prompt: `Product context — Solution: ${req.solution}. Audience: ${req.audience}. Problem: ${req.problem}.
+
+Must-have MVP features (return exactly one card per feature, using exact feature_name):
+${featureList}
+
+Produce all execution specs plus the foundation scaffolding prompt.`,
+    output: Output.object({ schema: blueprintBatchSchema }),
+  })
+
+  const items = output.cards.map((card) => ({
+    title: card.feature_name,
+    goal: card.goal,
+    screens: card.screens ?? [],
+    acceptance_criteria: card.acceptance_criteria,
+    test_steps: card.test_steps,
+    dependencies: card.dependencies ?? [],
+    how_to_build: card.how_to_build ?? "",
+    ai_prompt: card.ai_prompt,
+    resource_query: card.resource_query,
+    subtasks: card.acceptance_criteria,
+    how_to_test: card.test_steps.join(". "),
+    verify: card.verify,
+  }))
+
+  return { foundation_prompt: output.foundation_prompt, items }
 }
 
 const foundationSchema = z.object({

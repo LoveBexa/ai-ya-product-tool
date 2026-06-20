@@ -63,7 +63,6 @@ export function WorkspaceFlow({ view }: { view: FlowView }) {
   }
 
   if (view === "design") {
-    const hasMust = mustFeatures.length > 0
     if (design && schemaBlueprint) {
       return (
         <DesignView
@@ -83,14 +82,7 @@ export function WorkspaceFlow({ view }: { view: FlowView }) {
         />
       )
     }
-    if (hasMust) {
-      return <DesignPlaceholder />
-    }
-    return (
-      <div className="rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center text-sm text-muted-foreground">
-        Finish Define first — the UX Designer picks up from your must-haves.
-      </div>
-    )
+    return <DesignPlaceholder />
   }
 
   if (view === "execute") {

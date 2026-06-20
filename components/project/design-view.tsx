@@ -1,6 +1,16 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
+import { ChevronLeft, Loader2 } from "lucide-react"
+import { generateAndSaveDesign } from "@/app/actions/projects"
+import { formatAiError } from "@/lib/ai/errors"
+import {
+  projectPath,
+  STOP_LABEL,
+  type JourneyStop,
+} from "@/lib/journey/navigation"
+import { useProject } from "./project-context"
 import { DisclosureSection } from "./disclosure-section"
 import { FlowChain } from "./design-artifacts"
 import { StageHeader } from "./stage-header"
@@ -154,15 +164,91 @@ export function DesignView({
   )
 }
 
+function designPrerequisiteStop(
+  requirements: unknown,
+  features: { priority: string }[],
+): JourneyStop | null {
+  if (!requirements) return "discover"
+  if (!features.some((f) => f.priority === "must")) return "define"
+  return null
+}
+
 export function DesignPlaceholder() {
+  const { bundle, setBundle } = useProject()
+  const projectId = bundle.project.id
+  const [generating, setGenerating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [goBackTo, setGoBackTo] = useState<JourneyStop | null>(null)
+
+  async function handleCreateDesignFlows() {
+    const missing = designPrerequisiteStop(bundle.requirements, bundle.features)
+    if (missing) {
+      setError(
+        missing === "discover"
+          ? "Finish Discover first — generate requirements before creating design flows."
+          : "Add at least one Must Have feature on Define before creating design flows.",
+      )
+      setGoBackTo(missing)
+      return
+    }
+
+    setError(null)
+    setGoBackTo(null)
+    setGenerating(true)
+    try {
+      const design = await generateAndSaveDesign(projectId)
+      setBundle((b) => ({
+        ...b,
+        design,
+        project: { ...b.project, product_design: design },
+      }))
+    } catch (e) {
+      setError(formatAiError(e))
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   return (
     <div className="w-full">
       <StageHeader stage="design" />
-      <div className="rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center">
+      <div className="rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center sm:p-12">
         <p className="text-sm font-medium">Preparing your design</p>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
           Flows and a screen inventory from your must-haves will appear here.
         </p>
+
+        {error && (
+          <p className="mx-auto mt-4 max-w-md text-sm text-warning">{error}</p>
+        )}
+
+        <div className="mt-8 flex justify-center">
+          {goBackTo ? (
+            <Link
+              href={projectPath(projectId, goBackTo)}
+              className="inline-flex h-12 min-w-[220px] items-center justify-center gap-2 rounded-full border border-border bg-card px-8 text-sm font-semibold transition-colors hover:bg-secondary"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Back to {STOP_LABEL[goBackTo]}
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={handleCreateDesignFlows}
+              disabled={generating}
+              className="inline-flex h-12 min-w-[220px] items-center justify-center gap-2 rounded-full bg-mint px-8 text-sm font-semibold text-mint-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Creating flows…
+                </>
+              ) : (
+                "Create design flows"
+              )}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )
