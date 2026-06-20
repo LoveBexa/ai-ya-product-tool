@@ -193,6 +193,8 @@ export function DiscoveryChat({
     lastAssistantText.length > 0 &&
     isDiscoveryReadyMessage(lastAssistantText)
 
+  const canGenerateReady = (canGenerate || showInlineGenerate) && !busy
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
   }, [messages, busy, showInlineGenerate])
@@ -325,6 +327,31 @@ export function DiscoveryChat({
         </div>
 
         <aside className="flex min-h-0 w-full flex-col gap-4 overflow-y-auto lg:max-h-full">
+          <div className="shrink-0 rounded-2xl border border-border bg-card p-4 sm:p-5">
+            <Button
+              onClick={generate}
+              disabled={!canGenerateReady || generating}
+              className="h-10 w-full rounded-full"
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" /> Generating…
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" /> Generate requirements
+                </>
+              )}
+            </Button>
+            {!canGenerateReady && !busy && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Answer a couple of questions first, or wait for the analyst to
+                finish.
+              </p>
+            )}
+            {error && <p className="mt-2 text-xs text-warning">{error}</p>}
+          </div>
+
           <DiscoveryMaterialsPanel
             materials={materials}
             onMaterialsChange={setMaterials}
@@ -337,27 +364,6 @@ export function DiscoveryChat({
               Once the analyst understands your idea, finish discovery to define
               what ships first.
             </p>
-            <Button
-              onClick={generate}
-              disabled={!canGenerate || generating}
-              className="mt-3 w-full"
-            >
-              {generating ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Analyzing…
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" /> Generate requirements
-                </>
-              )}
-            </Button>
-            {!canGenerate && !busy && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Answer a couple of questions first.
-              </p>
-            )}
-            {error && <p className="mt-2 text-xs text-warning">{error}</p>}
           </div>
 
           <DiscoveryLearnings requirements={bundle.requirements} />
