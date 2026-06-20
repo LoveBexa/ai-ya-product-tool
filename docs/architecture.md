@@ -1,6 +1,6 @@
 # AIYA — Architecture
 
-**Last updated:** June 19, 2026
+**Last updated:** June 20, 2026
 
 ---
 
@@ -11,8 +11,9 @@
 | Framework | Next.js 16 (App Router), React 19, TypeScript |
 | Styling | Tailwind CSS 4 |
 | AI | Vercel AI SDK (`ai` v6) + **Google Gemini only** (`@ai-sdk/google`) |
-| Persistence | Supabase (Postgres + JSONB) — required for saved projects |
+| Persistence | Supabase (Postgres + JSONB) |
 | Validation | Zod (structured AI outputs) |
+| Hosting | Vercel (configured in `vercel.json`) |
 
 Package name: `ai-business-analyst`. Product name: **AIYA**.
 
@@ -22,7 +23,7 @@ Package name: `ai-business-analyst`. Product name: **AIYA**.
 
 ```
 /                         Landing page
-/start                    New project intake
+/start                    New project intake (+ project list)
 /projects/[id]            Overview dashboard
 /projects/[id]/discover   Discovery chat
 /projects/[id]/define     MVP feature board
@@ -30,22 +31,20 @@ Package name: `ai-business-analyst`. Product name: **AIYA**.
 /projects/[id]/execute    Blueprint / build plan (export)
 ```
 
-Legacy path aliases (`/decide`, `/build`) are still matched in navigation regexes. Primary routes use `/define` and `/execute`.
+Legacy aliases `/decide`, `/build` still matched in navigation regexes.
 
-User-facing label **Blueprint** maps to internal stage id `execute`.
+User-facing label **Blueprint** → internal stage id `execute`.
 
 ---
 
 ## Data model
 
-Defined in `scripts/schema.sql`:
-
 ```
 projects (1)
   ├── requirements (1:1)
-  ├── features (1:many)     priority: must | nice | ignore
-  ├── cards (1:many)        execution specs per must-have feature
-  └── product_design (jsonb) UX flows + screens from Design stage
+  ├── features (1:many)       priority: must | nice | ignore
+  ├── cards (1:many)          execution specs per must-have feature
+  └── product_design (jsonb)  UX flows + screens from Design stage
 ```
 
 ### Key `projects` columns
@@ -53,10 +52,12 @@ projects (1)
 | Column | Purpose |
 | --- | --- |
 | `stage` | `discovery` → `requirements` → `mvp` → `tasks` |
-| `chat` | Persisted discovery transcript (JSONB) |
-| `foundation_prompt` | Scaffolding prompt for app shell |
-| `product_design` | Hydrated design artifact (JSONB) — **requires migration if missing** |
-| `database_schema` | Column exists; schema is primarily derived in UI via `schema-blueprint.ts` |
+| `chat` | Discovery transcript (JSONB) |
+| `foundation_prompt` | App shell scaffolding prompt |
+| `product_design` | Design artifact (JSONB) |
+| `database_schema` | Saved schema markdown + prompt snippet at blueprint time |
+
+Schema source of truth: `scripts/schema.sql`. Existing DBs: `scripts/migrations/migrate-all.sql`.
 
 ---
 
@@ -64,31 +65,42 @@ projects (1)
 
 ```
 app/
-  page.tsx, start/page.tsx       Marketing + intake
-  projects/[id]/*                Journey pages (thin route wrappers)
-  api/chat/route.ts              Streaming discovery chat
-  actions/projects.ts            Server actions (CRUD + AI pipeline)
+  page.tsx, start/page.tsx
+  projects/[id]/layout.tsx      maxDuration=60, ProjectProvider
+  projects/[id]/*               Thin route wrappers → WorkspaceFlow
+  api/chat/route.ts             Streaming discovery (maxDuration=60)
+  actions/projects.ts           Server actions + AI pipeline
+  actions/billing.ts            Tier usage snapshot
 
 components/
-  landing/                       Marketing (sticky dark nav, mobile layout)
-  project/                       Journey UI
-  home/                          Project list + idea intake
+  landing/                      Marketing
+  home/                         Idea intake, project list
+  project/                      Journey UI (see below)
+  billing/                      Tier notices
 
 lib/
-  ai/                            Prompts, model resolution, generation
-  design/                        Design hydration + schema blueprint derivation
-  journey/                       Navigation, stage status, specialist metadata
-  build-plan/                    Markdown export assembler
-  supabase/                      Admin client + config check
+  ai/                           prompts, generate, model, errors, quota-retry, blueprint-context
+  billing/                      tier limits, quota counting
+  design/                       hydrate-design, schema-blueprint
+  journey/                      navigation, status, prerequisites, specialists
+  build-plan/                   Markdown export
+  supabase/                     Admin client
 ```
 
-### UI shell (recent changes)
+### Project components (journey)
 
-- **Landing:** sticky nav, solid black header, mobile-friendly layout
-- **Project workspace:** sidebar shows AIYA brand; floating header inside projects removed
-- **Discover chat:** viewport-locked full-height layout — messages scroll, chrome stays fixed
-- **Overview:** editable project title via `ProjectProvider` + `updateProjectTitle` server action
-- **Blueprint:** export button duplicated at bottom of build plan (in addition to top)
+| Component | Role |
+| --- | --- |
+| `workspace-flow.tsx` | Switches view; shows placeholder vs full content |
+| `stage-generate-panel.tsx` | Shared empty state + generate button + back link |
+| `discovery-chat.tsx` | Streaming chat + generate requirements |
+| `define-placeholder.tsx` | Empty define → generate requirements |
+| `define-board.tsx` | Feature board when populated |
+| `design-view.tsx` | DesignView + DesignPlaceholder + regenerate section |
+| `blueprint-placeholder.tsx` | Empty blueprint → create blueprint |
+| `build-plan.tsx` | Full blueprint (spec, flows, schema, foundation, cards, export) |
+| `phase-nav.tsx` | Prev/next links (Define → Design is link only) |
+| `overview-dashboard.tsx` | Journey progress + optional create blueprint |
 
 ---
 
@@ -97,135 +109,112 @@ lib/
 | Concern | Approach |
 | --- | --- |
 | Server persistence | Supabase via `getSupabaseAdmin()` in server actions |
-| Client state | `ProjectProvider` + `ProjectBundle` (project, requirements, features, cards, design) |
-| Discovery chat | `@ai-sdk/react` `useChat` → `DefaultChatTransport` → `/api/chat` |
-| Cache invalidation | `revalidatePath` in server actions; optimistic `setBundle` patches on client |
-
-### Chat persistence fix
-
-Previously, `saveChat` did not update client context — navigating away lost history. Fixed by syncing `setBundle` on save and not re-seeding messages when a saved chat already exists.
+| Client state | `ProjectProvider` + `ProjectBundle` |
+| Discovery chat | `@ai-sdk/react` `useChat` → `/api/chat` |
+| Cache | `revalidatePath` + optimistic `setBundle` patches |
 
 ---
 
 ## AI pipeline
 
-All structured generation lives in `lib/ai/generate.ts`. Prompts in `lib/ai/prompts.ts`. Model resolution in `lib/ai/model.ts`.
-
-### Provider
-
-**Google Gemini only.** Ollama, OpenRouter, Vercel AI Gateway, and OpenAI were removed to simplify deployment.
+### Provider & models
 
 ```env
-GOOGLE_GENERATIVE_AI_API_KEY=   # https://aistudio.google.com/apikey
-GOOGLE_MODEL=gemini-2.0-flash   # default; separate free-tier quota from 2.5-flash
+GOOGLE_GENERATIVE_AI_API_KEY=
+GOOGLE_MODEL=gemini-2.0-flash
 ```
 
-In-app model picker stores selection in `localStorage` key `aiya-discover-model`.
+- **Discover chat:** `resolveChatModel(modelId)` — picker in UI
+- **Structured generation:** `BA_MODEL` from env
+- **No multi-provider** — Ollama/OpenRouter/OpenAI removed
 
-### Generation functions
+### Generation functions (`lib/ai/generate.ts`)
 
-| Function | API calls | Trigger |
+All structured calls go through `generateStructured()` → `withQuotaRetry()`.
+
+| Function | Calls | Trigger |
 | --- | --- | --- |
-| Discovery chat (stream) | 1 per message | User sends message in Discover |
-| `generateDiscoveryBundle` | **1** | **Generate requirements** (requirements + features combined) |
-| `generateDesign` | 1 | **Create design flows** on Define → Design |
-| `generateBlueprintBatch` | **1** | **Create blueprint** on Overview (all cards + foundation combined) |
-| `generateFoundationPrompt` | 1 | Manual regenerate in Blueprint UI |
+| Discovery chat (stream) | 1/msg | User sends message |
+| `generateDiscoveryBundle` | 1 | Generate requirements |
+| `generateDesign` | 1 | Create design flows |
+| `generateBlueprintBatch` | 1–2 | Create blueprint |
+| `generateFoundationPrompt` | 1 | Manual regenerate in UI |
 
-Legacy single-purpose functions (`generateRequirements`, `generateFeatures`, `generateQueueItem`) remain but main flows use batched calls.
+### Blueprint batch input
 
-### API call budget (typical happy path)
+`generateBlueprintBatch` receives via `BlueprintBatchInput`:
 
-| Step | Gemini calls |
-| --- | --- |
-| Discovery chat | ~5–15 (user-driven) |
-| Generate requirements | 1 |
-| Create design flows | 1 |
-| Create blueprint | 1 |
-| **Total (excl. chat)** | **3** |
+- `idea`, `req`, `mustFeatures`, `allFeatures`, `design`, `schemaBlueprint`
+- Assembled prompt from `assembleBlueprintPromptContext()`
+- Saves `foundation_prompt`, `database_schema`, feature cards with screens + user_journey
 
-Previously: finish discovery = 2 calls; blueprint with 5 must-haves = 6+ calls.
+### Quota handling (`lib/ai/quota-retry.ts`)
 
-### Error handling
-
-- `maxRetries: 1` on all AI calls (fail fast on quota)
-- `formatAiError()` in `lib/ai/errors.ts` — friendly messages for quota/rate-limit (429), suggests `gemini-2.0-flash` or pacing
+- Detects 429 / quota errors
+- Retries with delay (API hint + buffer, capped at 8s on Vercel)
+- Max 2 attempts on Vercel, 3 locally
+- Chat API: `maxRetries: 1` in route (no long sleeps)
 
 ### Structured output flow
 
 ```
-Discover chat (stream, DISCOVERY_SYSTEM)
+Discover chat (DISCOVERY_SYSTEM)
     ↓ Generate requirements
-generateDiscoveryBundle (DISCOVERY_OUTPUT_SYSTEM)
-    → requirements row + features rows
-    ↓ Create design flows
-generateDesign (DESIGN_SYSTEM) → hydrateProductDesign → product_design jsonb
-    ↓ Create blueprint
-generateBlueprintBatch (QUEUE_BATCH_SYSTEM)
-    → cards rows + foundation_prompt on project
+generateDiscoveryBundle → requirements + features rows
+    ↓ Create design flows (on Design page)
+generateDesign → hydrateProductDesign → product_design jsonb
+    ↓ Create blueprint (on Blueprint page)
+generateBlueprintBatch → cards + foundation_prompt + database_schema
 ```
 
-Schema blueprint is **derived** in `lib/design/schema-blueprint.ts` from design + must-have features — not a separate AI call.
+Schema blueprint is **derived** in `lib/design/schema-blueprint.ts` — not a separate AI call.
 
 ---
 
-## Server actions (`app/actions/projects.ts`)
+## Billing (`lib/billing/`)
 
-Key actions added or changed in recent work:
+| Check | Where |
+| --- | --- |
+| Project count | `createProject` |
+| Blueprint count | `generateAndSaveCards` |
+| UI snapshot | `getTierUsage()` → `/start`, blueprint placeholder |
+
+Free: 1 project, 1 blueprint. Regenerate on same project allowed.
+
+---
+
+## Server actions (key)
 
 | Action | Purpose |
 | --- | --- |
-| `finishDiscovery` | Single AI call → save requirements + features → navigate to Define |
-| `generateAndSaveDesign` | AI design → `product_design` jsonb |
-| `generateAndSaveCards` | Batch blueprint → cards + foundation_prompt |
-| `updateProjectTitle` | Editable overview title |
-| `saveChat` | Persist transcript + sync bundle |
-| `saveProductDesign` | Persist screen purpose edits |
+| `finishDiscovery` | Bundle → requirements + features |
+| `generateAndSaveDesign` | AI design → product_design |
+| `generateAndSaveCards` | Full blueprint batch → cards + foundation + schema |
+| `updateProjectTitle` | Overview title edit |
+| `saveChat` / `saveProductDesign` | Persist edits |
 
-`ProjectBundle` type includes `design: ProductDesign | null`.
+Returns `BlueprintSaveResult` from `generateAndSaveCards`: `{ cards, features, foundation_prompt, database_schema }`.
 
 ---
 
-## Environment & local dev
+## Styling tokens
+
+- Error/alert text: `--alert-text` (dark burgundy) via `text-alert-text`
+- Warning accents: `--warning` (yellow) for icons/borders only
+- Pastels: mint, lilac, yellow stage accents
+
+---
+
+## Local dev
 
 ```bash
 npm install
 cp .env.example .env.local
-npm run dev   # http://localhost:3000
+npm run dev        # http://localhost:3000
+npm run build      # production build + typecheck
 ```
 
-Supabase vars are optional for landing/demo but **required** for `/projects/[id]/*`. Without them, layout shows "Database not connected".
-
-Demo: run `scripts/seed-demo-project.sql`, open `/projects/00000000-0000-4000-a800-000000000001`.
-
----
-
-## Repo hygiene
-
-`.gitignore` includes:
-
-```
-node_modules/
-.next/
-dist/
-build/
-.vercel/
-.env
-.env.local
-```
-
-Previously `.next` was accidentally tracked (~3000 files), causing push failures. Confirm remote history is clean.
-
----
-
-## Known technical debt
-
-| Issue | Location |
-| --- | --- |
-| TS error: `ChatMessage[]` role typing | `discovery-chat.tsx` ~line 126 |
-| README outdated (multi-provider) | `README.md` |
-| Design placeholder if user skips **Create design flows** | `design-view.tsx` |
-| Materials upload is mock-only | `discovery-upload-zone.tsx` |
+Demo: `scripts/seed-demo-project.sql` → `/projects/00000000-0000-4000-a800-000000000001`
 
 ---
 

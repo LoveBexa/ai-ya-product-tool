@@ -162,7 +162,15 @@ export function assembleBuildPlanMarkdown({
 }
 
 export function downloadMarkdown(filename: string, content: string) {
-  const blob = new Blob([content], { type: "text/markdown;charset=utf-8" })
+  downloadFile(filename, content, "text/markdown;charset=utf-8")
+}
+
+export function downloadFile(
+  filename: string,
+  content: string,
+  mimeType = "text/plain;charset=utf-8",
+) {
+  const blob = new Blob([content], { type: mimeType })
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement("a")
   anchor.href = url

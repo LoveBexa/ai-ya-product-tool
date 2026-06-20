@@ -1,6 +1,6 @@
 # AIYA — Decisions
 
-**Last updated:** June 19, 2026
+**Last updated:** June 20, 2026
 
 Record of significant product and technical decisions, including changes made during recent Cursor development sessions.
 
@@ -34,9 +34,9 @@ Format: **Decision** → Context → Outcome
 
 **Context:** Auto-running AI between stages burns quota and skips user review.
 
-**Decision:** User must click to advance. Discover can suggest readiness; Define must have must-haves before design; Overview triggers blueprint creation.
+**Decision:** User must click to advance. Discover can suggest readiness; Define must have must-haves before design; generation happens on each stage's page, not via phase nav.
 
-**Outcome:** `finishDiscovery` navigates to Define after generate. Design requires **Create design flows** click in phase nav. Blueprint requires **Create blueprint** on overview.
+**Outcome:** `finishDiscovery` navigates to Define after generate. Define phase nav is **Design flows** (link only). Design generation only on `/design`. Blueprint on overview or `/execute`.
 
 ---
 
@@ -58,6 +58,36 @@ Format: **Decision** → Context → Outcome
 
 ---
 
+### ADR-021: Stage generate panel pattern
+
+**Context:** Empty stages were confusing — users didn't know what to do or why generation failed.
+
+**Decision:** Every pipeline stage uses the same empty-state UX: dashed placeholder, big generate button, prerequisite error with **Back to [stage]** link.
+
+**Outcome:** `StageGeneratePanel` + `lib/journey/prerequisites.ts`. Placeholders: `DefinePlaceholder`, `DesignPlaceholder`, `BlueprintPlaceholder`. `workspace-flow.tsx` switches between placeholder and full content.
+
+---
+
+### ADR-022: Design generation only on Design page
+
+**Context:** Phase nav "Create design flows" from Define auto-generated design and burned quota before user reviewed features.
+
+**Decision:** Define → Design phase nav is a **link only** (`NEXT_STEP_CTA.define = "Design flows"`). User must click **Create design flows** on the Design page.
+
+**Outcome:** Generation removed from Define nav. Regenerate available on Design page with confirmation warning.
+
+---
+
+### ADR-023: Free / paid tier limits
+
+**Context:** Need to gate usage before payment integration exists.
+
+**Decision:** Free tier: 1 project, 1 blueprint. Paid tier via `AIYA_BILLING_TIER=paid` env (unlimited). Regenerate blueprint on same project allowed on Free.
+
+**Outcome:** `lib/billing/tier.ts`, `quota.server.ts`, `TierLimitNotice` UI. No Stripe yet.
+
+---
+
 ## AI & providers
 
 ### ADR-006: Google Gemini only
@@ -66,7 +96,7 @@ Format: **Decision** → Context → Outcome
 
 **Decision:** Remove all providers except Google Gemini via `@ai-sdk/google`.
 
-**Outcome:** Single env var `GOOGLE_GENERATIVE_AI_API_KEY`. `lib/ai/model.ts` exports `resolveProvider(): "google"` only. README not yet updated.
+**Outcome:** Single env var `GOOGLE_GENERATIVE_AI_API_KEY`. `lib/ai/model.ts` exports `resolveProvider(): "google"` only. README updated.
 
 ---
 
@@ -91,29 +121,42 @@ Format: **Decision** → Context → Outcome
 | Finish discovery | 2 calls | 1 | `generateDiscoveryBundle` |
 | Create blueprint | N+1 calls | 1 | `generateBlueprintBatch` |
 
-**Outcome:** New prompts `DISCOVERY_OUTPUT_SYSTEM` and `QUEUE_BATCH_SYSTEM` in `prompts.ts`. Foundation prompt included in blueprint batch and saved to `projects.foundation_prompt` automatically.
+**Outcome:** New prompts in `prompts.ts`. Foundation prompt included in blueprint batch and saved to `projects.foundation_prompt` automatically.
 
 Chat remains 1 call per message (cannot batch conversation).
 
 ---
 
-### ADR-009: Fail fast on AI retries
+### ADR-009: Quota retry with Vercel-safe caps
 
-**Context:** Long retry loops on quota errors felt broken and wasted time.
+**Context:** Initial auto-retry slept 48s+ inside serverless functions, causing Vercel timeouts. Users also wanted automatic retry on 429.
 
-**Decision:** `maxRetries: 1` on all `generateText` and `streamText` calls.
+**Decision:** `withQuotaRetry()` in `lib/ai/quota-retry.ts`:
+- Max wait capped at 8s on Vercel, 2 attempts
+- Local dev: up to 3 attempts with longer waits
+- Chat API keeps `maxRetries: 1` (no long sleeps in stream route)
 
-**Outcome:** Faster failure → user sees `formatAiError` message with actionable guidance.
+**Outcome:** Structured generation retries without blowing serverless timeout. `maxDuration: 60` on project layout + `vercel.json`.
 
 ---
 
-### ADR-010: Schema blueprint is derived, not generated
+### ADR-010: Schema blueprint is derived, saved at blueprint time
 
 **Context:** Separate AI call for database schema would add cost and inconsistency with design.
 
-**Decision:** Hydrate design from AI (`hydrate-design.ts`); derive tables from screens + must-have features (`schema-blueprint.ts`).
+**Decision:** Hydrate design from AI (`hydrate-design.ts`); derive tables from screens + must-have features (`schema-blueprint.ts`). Save snapshot to `projects.database_schema` when blueprint is generated.
 
-**Outcome:** Schema appears in Design and Blueprint export without extra API call. `projects.database_schema` column exists but is not the primary source.
+**Outcome:** Schema appears in Design and Blueprint export without extra API call. Blueprint batch receives schema snippet via `lib/ai/blueprint-context.ts`.
+
+---
+
+### ADR-024: Blueprint uses full pipeline context
+
+**Context:** Blueprint cards were generated from must-haves only, missing design flows and nice-to-have context.
+
+**Decision:** `generateBlueprintBatch` receives requirements, all features (must/nice/ignore), design artifact, and derived schema via `assembleBlueprintPromptContext()`.
+
+**Outcome:** Richer cards with screens, user journey, acceptance criteria. Build plan export includes flows and full card details.
 
 ---
 
@@ -135,7 +178,7 @@ Chat remains 1 call per message (cannot batch conversation).
 
 **Decision:** `projects.product_design jsonb` column. Hydrated `ProductDesign` type in `lib/types/design.ts`.
 
-**Outcome:** Requires migration on existing DBs. Included in `scripts/schema.sql`.
+**Outcome:** Requires migration on existing DBs. Included in `scripts/schema.sql` and `scripts/migrations/migrate-all.sql`.
 
 ---
 
@@ -146,6 +189,16 @@ Chat remains 1 call per message (cannot batch conversation).
 **Decision:** `projects.chat jsonb` array of `{ role, content }`.
 
 **Outcome:** Fixed bug where client bundle wasn't updated on save — now syncs via `setBundle` in discovery chat.
+
+---
+
+### ADR-025: Consolidated DB migration script
+
+**Context:** Existing Supabase DBs missing `product_design`, `cards` columns (`card_type`, `acceptance_criteria`, etc.), causing runtime errors.
+
+**Decision:** Single idempotent migration bundle at `scripts/migrations/migrate-all.sql` (includes 001, 002).
+
+**Outcome:** Run once in Supabase SQL editor on existing deployments. Quota counting no longer filters on missing `card_type`.
 
 ---
 
@@ -205,6 +258,16 @@ Chat remains 1 call per message (cannot batch conversation).
 
 ---
 
+### ADR-026: Burgundy alert text for errors
+
+**Context:** Error messages used yellow `text-warning`, which looked like warnings not errors.
+
+**Decision:** Add `--alert-text` CSS token (dark burgundy); use `text-alert-text` on error messages.
+
+**Outcome:** `app/globals.css`. Applied in `StageGeneratePanel`, discovery chat, and generate error surfaces.
+
+---
+
 ## DevOps
 
 ### ADR-020: Strict `.gitignore` for build artifacts
@@ -217,14 +280,25 @@ Chat remains 1 call per message (cannot batch conversation).
 
 ---
 
+### ADR-027: Vercel function duration for AI routes
+
+**Context:** Blueprint generation takes 30–60s; default 10s Vercel timeout fails.
+
+**Decision:** `export const maxDuration = 60` on `app/projects/[id]/layout.tsx`. `vercel.json` sets 60s for project routes and chat API.
+
+**Outcome:** Blueprint and design generation can complete on Vercel Hobby (may still need Pro for edge cases).
+
+---
+
 ## Deferred / rejected (for now)
 
 | Idea | Why deferred |
 | --- | --- |
 | Combine design + blueprint in one call | Different user review points; design edits before blueprint |
-| Auto-generate design on Define navigation | Burns quota; user may want to edit features first |
+| Auto-generate design on Define navigation | Burns quota; user may want to edit features first (rejected in ADR-022) |
 | Keep multi-provider AI | Operational complexity; Gemini sufficient for MVP |
 | Evolve stage in MVP | Focus on core Discover → Blueprint loop first |
+| Long quota retry sleeps on Vercel | Causes serverless timeout; capped at 8s (ADR-009) |
 
 ---
 

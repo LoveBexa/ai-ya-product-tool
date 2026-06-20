@@ -2,7 +2,7 @@
 
 **Tagline:** *Clarity before code. Build with confidence.*
 
-**Last updated:** June 19, 2026
+**Last updated:** June 20, 2026
 
 ---
 
@@ -59,7 +59,14 @@ Each stage has a specialist AI role and a clear output:
 
 The end goal is a **blueprint** — not code. A blueprint you can trust before you write a line.
 
-Handoffs are deliberate: the user clicks **Generate requirements**, then **Create design flows**, then **Create blueprint**. AIYA does not auto-advance through stages without explicit action.
+Handoffs are deliberate:
+
+1. **Discover** — chat, then click **Generate requirements**
+2. **Define** — review/edit features, then link to **Design flows**
+3. **Design** — click **Create design flows** (or re-generate with confirmation)
+4. **Blueprint** — click **Create blueprint** on overview or Blueprint page
+
+AIYA does not auto-advance through stages or auto-generate the next stage from phase navigation.
 
 ---
 
@@ -76,7 +83,16 @@ Handoffs are deliberate: the user clicks **Generate requirements**, then **Creat
 
 AIYA should remember your decisions, assumptions, priorities, workflows, and goals — so six months later you're not asking *"Why did we decide that?"*
 
-Today the app persists requirements, features, design, cards, and chat per project in Supabase. Full **product memory** (versioning, change history, cross-project learning) is future work.
+Today the app persists requirements, features, design, cards, chat, foundation prompt, and database schema per project in Supabase. Full **product memory** (versioning, change history, cross-project learning) is future work.
+
+---
+
+## Free tier (current)
+
+To keep the product accessible while payment is built:
+
+- **Free:** 1 project, 1 blueprint (regenerate on the same project is OK)
+- **Paid:** Unlimited (currently env flag `AIYA_BILLING_TIER=paid`; checkout not built)
 
 ---
 
@@ -98,6 +114,10 @@ The Discover stage already has a **materials panel UI shell** (upload zone, tabs
 Post-launch iteration: feedback, insights, and what to build next.
 
 Stage metadata exists in `lib/journey/specialists.ts` (`evolve` — AI Product Strategist). There is no live route or AI flow in the current codebase.
+
+### Paid upgrade flow
+
+Stripe or similar checkout to replace the env-only paid tier flag.
 
 ---
 

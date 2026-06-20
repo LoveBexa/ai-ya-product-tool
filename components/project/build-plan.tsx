@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react"
 import {
+  Check,
+  Copy,
   Download,
   GripVertical,
   Loader2,
@@ -20,9 +22,14 @@ import {
   updateFoundationPrompt,
 } from "@/app/actions/projects"
 import {
-  assembleBuildPlanMarkdown,
-  downloadMarkdown,
+  downloadFile,
 } from "@/lib/build-plan/export"
+import {
+  EXPORT_FORMATS,
+  exportFilename,
+  getExportFormat,
+  type ExportFormatId,
+} from "@/lib/build-plan/export-formats"
 import type { SchemaBlueprint } from "@/lib/design/schema-blueprint"
 import { cn } from "@/lib/utils"
 import type { Feature, Requirements, TaskCard } from "@/lib/types"
@@ -82,15 +89,19 @@ export function BuildPlan({
   const [overIndex, setOverIndex] = useState<number | null>(null)
   const [generatingFoundation, setGeneratingFoundation] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
+  const [exportFormatId, setExportFormatId] = useState<ExportFormatId>("blueprint")
+  const [copiedAll, setCopiedAll] = useState(false)
   const [detailCardId, setDetailCardId] = useState<string | null>(null)
 
   const detailCard = cards.find((c) => c.id === detailCardId) ?? null
   const detailFeatureName =
     features.find((f) => f.id === detailCard?.feature_id)?.name ?? "Feature"
 
-  const markdown = useMemo(() => {
+  const exportFormat = getExportFormat(exportFormatId)
+
+  const exportContent = useMemo(() => {
     if (!requirements) return ""
-    return assembleBuildPlanMarkdown({
+    return exportFormat.assemble({
       projectTitle,
       requirements,
       mustFeatures,
@@ -100,7 +111,32 @@ export function BuildPlan({
       foundationPrompt,
       cards,
     })
-  }, [projectTitle, requirements, mustFeatures, features, design, schemaBlueprint, foundationPrompt, cards])
+  }, [
+    projectTitle,
+    requirements,
+    mustFeatures,
+    features,
+    design,
+    schemaBlueprint,
+    foundationPrompt,
+    cards,
+    exportFormat,
+  ])
+
+  async function copyAll() {
+    try {
+      await navigator.clipboard.writeText(exportContent)
+      setCopiedAll(true)
+      setTimeout(() => setCopiedAll(false), 1500)
+    } catch {
+      /* clipboard unavailable */
+    }
+  }
+
+  function closeExportPreview() {
+    setExportOpen(false)
+    setCopiedAll(false)
+  }
 
   async function persistOrder(nextIds: string[]) {
     const reordered = nextIds.map((id, index) => {
@@ -177,7 +213,7 @@ export function BuildPlan({
           className="shrink-0 rounded-full"
           onClick={() => setExportOpen(true)}
         >
-          <Download className="h-4 w-4" /> Export blueprint
+          <Download className="h-4 w-4" /> Export
         </Button>
       </div>
 
@@ -481,7 +517,7 @@ export function BuildPlan({
           className="rounded-full"
           onClick={() => setExportOpen(true)}
         >
-          <Download className="h-4 w-4" /> Export blueprint
+          <Download className="h-4 w-4" /> Export
         </Button>
       </div>
 
@@ -490,32 +526,66 @@ export function BuildPlan({
           <button
             aria-label="Close export preview"
             className="absolute inset-0 bg-background/70 backdrop-blur-sm"
-            onClick={() => setExportOpen(false)}
+            onClick={closeExportPreview}
           />
           <div className="relative flex max-h-[85vh] w-full max-w-3xl flex-col rounded-2xl border border-border bg-card shadow-2xl">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <h3 className="text-sm font-semibold">Export preview</h3>
-              <Button size="icon" variant="ghost" onClick={() => setExportOpen(false)}>
-                <X className="h-4 w-4" />
-              </Button>
+            <div className="border-b border-border px-4 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-sm font-semibold">Export preview</h3>
+                <Button size="icon" variant="ghost" onClick={closeExportPreview}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {EXPORT_FORMATS.map((format) => (
+                  <Button
+                    key={format.id}
+                    type="button"
+                    size="sm"
+                    variant={exportFormatId === format.id ? "primary" : "outline"}
+                    className="rounded-full"
+                    onClick={() => {
+                      setExportFormatId(format.id)
+                      setCopiedAll(false)
+                    }}
+                  >
+                    {format.label}
+                  </Button>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {exportFormat.description}
+              </p>
             </div>
             <pre className="flex-1 overflow-y-auto p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap">
-              {markdown}
+              {exportContent}
             </pre>
             <div className="flex justify-end gap-2 border-t border-border p-4">
-              <Button variant="outline" onClick={() => setExportOpen(false)}>
+              <Button variant="outline" onClick={closeExportPreview}>
                 Close
+              </Button>
+              <Button variant="outline" onClick={copyAll}>
+                {copiedAll ? (
+                  <>
+                    <Check className="h-4 w-4" /> Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4" /> Copy all
+                  </>
+                )}
               </Button>
               <Button
                 onClick={() => {
-                  downloadMarkdown(
-                    `${projectTitle.replace(/\s+/g, "-").toLowerCase()}-blueprint.md`,
-                    markdown,
+                  downloadFile(
+                    exportFilename(projectTitle, exportFormat),
+                    exportContent,
+                    exportFormat.mimeType,
                   )
-                  setExportOpen(false)
+                  closeExportPreview()
                 }}
               >
-                <Download className="h-4 w-4" /> Download .md
+                <Download className="h-4 w-4" /> Download {exportFormat.extension}
               </Button>
             </div>
           </div>

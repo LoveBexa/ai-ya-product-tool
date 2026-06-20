@@ -55,11 +55,7 @@ AIYA guides you through a structured journey. Each stage has a specialist AI rol
 
 The end goal is a **blueprint** — not code. A blueprint you can trust before you write a line.
 
-### Thinking before building
-
-Most AI tools help you build *while* you're thinking.
-
-AIYA helps you think *before* you build.
+Each stage shows an empty state with a generate button until you run that stage's AI step. Define → Design is a link only; design generation happens on the Design page.
 
 ### Coming soon (vision)
 
@@ -69,8 +65,6 @@ Import the messy stuff you've already created and let AIYA synthesise it:
 - Screenshots and wireframes  
 - Sketches and whiteboard photos  
 - ChatGPT and Claude conversation exports  
-
-AIYA reads what you've already made and turns it into a coherent product — closer to what a real business analyst does.
 
 ---
 
@@ -87,8 +81,9 @@ AIYA reads what you've already made and turns it into a coherent product — clo
 
 - **Next.js 16** (App Router) + **React 19** + **TypeScript**
 - **Tailwind CSS 4**
-- **Vercel AI SDK** — multi-provider AI (Ollama, OpenAI, OpenRouter, Vercel AI Gateway)
-- **Supabase** (optional) — project persistence
+- **Vercel AI SDK** + **Google Gemini** (`@ai-sdk/google`)
+- **Supabase** — project persistence (Postgres + JSONB)
+- **Vercel** — hosting (`maxDuration: 60` for AI routes)
 
 ---
 
@@ -97,8 +92,8 @@ AIYA reads what you've already made and turns it into a coherent product — clo
 ### Prerequisites
 
 - Node.js 18+
-- An AI provider (local [Ollama](https://ollama.com) works great for development)
-- Supabase project (optional for persistence)
+- [Google AI Studio API key](https://aistudio.google.com/apikey)
+- Supabase project (for saved projects)
 
 ### Install
 
@@ -111,31 +106,31 @@ cp .env.example .env.local
 
 ### Configure `.env.local`
 
-See [`.env.example`](.env.example). Minimum for local dev with Ollama:
-
 ```env
-AI_PROVIDER=ollama
-OLLAMA_BASE_URL=http://127.0.0.1:11434/v1
-OLLAMA_MODEL=qwen2.5:14b
-```
+GOOGLE_GENERATIVE_AI_API_KEY=
+GOOGLE_MODEL=gemini-2.0-flash
 
-For a single demo project with sample data, run `scripts/seed-demo-project.sql` in Supabase, then open `/projects/00000000-0000-4000-a800-000000000001`.
-
-For persistence, add Supabase credentials and run the schema:
-
-```bash
-# scripts/schema.sql in your Supabase SQL editor
 NEXT_PUBLIC_SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
+
+# Optional — disable free tier limits for dev
+# AIYA_BILLING_TIER=paid
 ```
+
+### Database setup
+
+New project — run `scripts/schema.sql` in Supabase SQL editor.
+
+Existing database — run `scripts/migrations/migrate-all.sql` once.
+
+Demo data: run `scripts/seed-demo-project.sql`, then open `/projects/00000000-0000-4000-a800-000000000001`.
 
 ### Run
 
 ```bash
-npm run dev
+npm run dev      # http://localhost:3000
+npm run build    # production build + typecheck
 ```
-
-Open [http://localhost:3000](http://localhost:3000) — landing page and `/start` for new projects.
 
 ---
 
@@ -146,13 +141,30 @@ app/                    # Next.js routes (landing, /start, /projects/[id]/…)
 components/
   landing/              # Marketing page
   project/              # Journey UI (discover, define, design, blueprint)
+  billing/              # Tier limit notices
 lib/
-  ai/                   # Prompts and generation pipeline
+  ai/                   # Prompts, generation, quota retry, blueprint context
+  billing/              # Free/paid tier limits
   design/               # Schema blueprint derivation from Design artifacts
-  journey/              # Stage navigation and status
+  journey/              # Stage navigation, prerequisites, status
   build-plan/           # Blueprint markdown export
-scripts/schema.sql      # Supabase schema
+scripts/
+  schema.sql            # Full Supabase schema
+  migrations/           # Idempotent migrations for existing DBs
+docs/                   # Handover docs — start at docs/project-state.md
 ```
+
+---
+
+## Documentation
+
+| Doc | Purpose |
+| --- | --- |
+| [docs/project-state.md](docs/project-state.md) | **Start here** — current snapshot for handover |
+| [docs/architecture.md](docs/architecture.md) | Stack, routes, AI pipeline, data model |
+| [docs/roadmap.md](docs/roadmap.md) | Shipped features and backlog |
+| [docs/decisions.md](docs/decisions.md) | ADR-style decision record |
+| [docs/vision.md](docs/vision.md) | Product vision and north star |
 
 ---
 
