@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 import { isAuthEnabled } from "@/lib/auth/config"
+import { getPostLoginRedirectForUser } from "@/lib/auth/post-login-redirect"
 
 const PUBLIC_PREFIXES = ["/login", "/register", "/auth/", "/api/"]
 const PUBLIC_EXACT = new Set(["/"])
@@ -63,9 +64,10 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && (pathname === "/login" || pathname === "/register")) {
-    const next = request.nextUrl.searchParams.get("next") || "/start"
+    const next = request.nextUrl.searchParams.get("next")
+    const destPath = await getPostLoginRedirectForUser(user.id, next, supabase)
     const dest = request.nextUrl.clone()
-    dest.pathname = next.startsWith("/") ? next : "/start"
+    dest.pathname = destPath
     dest.search = ""
     return NextResponse.redirect(dest)
   }
