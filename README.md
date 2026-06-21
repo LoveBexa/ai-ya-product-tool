@@ -1,5 +1,9 @@
 # AIYA
 
+## Demo Video
+
+[![Watch the demo](https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg)](https://drive.google.com/file/d/1d9Nu0IpS-zMOS23NJoz6AViNPtsAcb37/view)
+
 **Clarity before code. Build with confidence.**
 
 AIYA is an AI product partner for founders, indie hackers, and first-time builders. It helps you **think before you build** — turning messy ideas into a clear, editable **blueprint** you can hand to Cursor, Claude Code, v0, or your dev team.
