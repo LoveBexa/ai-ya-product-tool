@@ -39,14 +39,16 @@ export function DesignTraceBadges({
   )
 }
 
-export function DefineTraceBadge({ featureName }: { featureName: string }) {
+export function FeatureTraceBadge({ featureName }: { featureName: string }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-mint/40 bg-mint/10 px-2 py-0.5 text-[10px] text-mint-foreground">
-      <span className="font-semibold uppercase tracking-wide">Define</span>
+    <span className="inline-flex items-center rounded-full border border-mint/40 bg-mint/10 px-2.5 py-0.5 text-[10px] font-medium text-mint-foreground">
       {featureName}
     </span>
   )
 }
+
+/** @deprecated Use FeatureTraceBadge */
+export const DefineTraceBadge = FeatureTraceBadge
 
 export function FlowTraceBadge({
   step,

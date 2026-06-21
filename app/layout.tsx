@@ -18,7 +18,7 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: "AIYA — Your AI product team",
   description:
-    "Clarity before code. Turn ideas into clear product blueprints — Discover, Define, Design, Blueprint.",
+    "Clarity before code. Turn ideas into clear product blueprints — Discover, Features, Journey, Blueprint.",
 }
 
 export default function RootLayout({

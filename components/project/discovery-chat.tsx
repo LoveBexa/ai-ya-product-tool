@@ -18,13 +18,11 @@ import {
 } from "./discovery-materials-panel"
 import { DiscoveryUploadZone } from "./discovery-upload-zone"
 import { DiscoveryAnalysisMessage } from "./discovery-analysis-message"
-import { useDiscoverChatModel } from "./chat-model-picker"
 import {
   getRequirementsGenerateBlocker,
 } from "@/lib/journey/prerequisites"
 import { needsOnboarding } from "@/lib/journey/onboarding"
 
-const DEFAULT_CHAT_MODEL = "gemini-2.0-flash"
 const GENERIC_STREAM_ERROR = "An error occurred."
 
 function isMaskedStreamError(text: string): boolean {
@@ -89,9 +87,6 @@ export function DiscoveryChat() {
   const projectId = bundle.project.id
   const idea = bundle.project.idea
   const savedChat = bundle.project.chat ?? []
-  const { modelId, loading: modelsLoading } = useDiscoverChatModel()
-  const modelIdRef = useRef(DEFAULT_CHAT_MODEL)
-  modelIdRef.current = modelId || DEFAULT_CHAT_MODEL
 
   const transport = useMemo(
     () =>
@@ -101,7 +96,6 @@ export function DiscoveryChat() {
           body: {
             messages,
             idea,
-            model: modelIdRef.current,
           },
         }),
       }),
@@ -125,14 +119,14 @@ export function DiscoveryChat() {
   const showAnalysisPreview = materials.length >= 2
 
   useEffect(() => {
-    if (seeded.current || modelsLoading) return
+    if (seeded.current) return
     if (messages.length > 0 || savedChat.length > 0) {
       seeded.current = true
       return
     }
     seeded.current = true
     sendMessage({ text: idea })
-  }, [messages.length, savedChat.length, idea, sendMessage, modelsLoading])
+  }, [messages.length, savedChat.length, idea, sendMessage])
 
   useEffect(() => {
     if (status !== "ready" || messages.length === 0) return
@@ -163,7 +157,7 @@ export function DiscoveryChat() {
 
   function send() {
     const value = input.trim()
-    if (!value || busy || modelsLoading) return
+    if (!value || busy) return
     sendMessage({ text: value })
     setInput("")
   }
@@ -277,7 +271,7 @@ export function DiscoveryChat() {
                 >
                   {generating ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin" /> Building Define board…
+                      <Loader2 className="h-4 w-4 animate-spin" /> Building Features board…
                     </>
                   ) : (
                     <>
@@ -328,7 +322,7 @@ export function DiscoveryChat() {
       <Button
         size="icon"
         onClick={send}
-        disabled={busy || !input.trim() || modelsLoading}
+        disabled={busy || !input.trim()}
         aria-label="Send"
         className="shrink-0"
       >

@@ -38,6 +38,8 @@ import {
   countProjects,
   projectHasBlueprint,
 } from "@/lib/billing/quota.server"
+import { requireUserId } from "@/lib/auth/session"
+import { isAuthEnabled } from "@/lib/auth/config"
 
 export interface ProjectBundle {
   project: Project
@@ -49,9 +51,46 @@ export interface ProjectBundle {
 
 /* ---------------------------- Projects ---------------------------- */
 
+async function claimOrphanProject(projectId: string, userId: string) {
+  const db = getSupabaseAdmin()
+  const { error } = await db
+    .from("projects")
+    .update({ user_id: userId })
+    .eq("id", projectId)
+    .is("user_id", null)
+  if (error) throw new Error(error.message)
+}
+
+async function assertProjectOwned(projectId: string, userId: string | null) {
+  if (!userId) return
+  const db = getSupabaseAdmin()
+  const { data, error } = await db
+    .from("projects")
+    .select("user_id")
+    .eq("id", projectId)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  if (!data) {
+    throw new Error("Project not found")
+  }
+  if (data.user_id == null) {
+    await claimOrphanProject(projectId, userId)
+    return
+  }
+  if (data.user_id !== userId) {
+    throw new Error("Project not found")
+  }
+}
+
+async function ensureProjectAccess(projectId: string) {
+  const userId = await requireUserId()
+  await assertProjectOwned(projectId, userId)
+}
+
 export async function createProject(idea: string): Promise<string> {
+  const userId = await requireUserId()
   const tier = resolveBillingTier()
-  const projectCount = await countProjects()
+  const projectCount = await countProjects(userId ?? undefined)
   if (!canCreateProject(tier, projectCount)) {
     throw new Error(TIER_MESSAGES.projectLimit)
   }
@@ -66,6 +105,7 @@ export async function createProject(idea: string): Promise<string> {
       idea: trimmedIdea,
       stage: "discovery",
       chat: [],
+      ...(userId ? { user_id: userId } : {}),
     })
     .select("id")
     .single()
@@ -77,11 +117,15 @@ export async function createProject(idea: string): Promise<string> {
 }
 
 export async function listProjects(): Promise<Project[]> {
+  const userId = await requireUserId()
   const db = getSupabaseAdmin()
-  const { data, error } = await db
-    .from("projects")
-    .select("*")
-    .order("created_at", { ascending: false })
+  let query = db.from("projects").select("*").order("created_at", { ascending: false })
+  if (isAuthEnabled() && userId) {
+    query = query.or(`user_id.eq.${userId},user_id.is.null`)
+  } else if (isAuthEnabled()) {
+    return []
+  }
+  const { data, error } = await query
   if (error) throw new Error(error.message)
   return ((data ?? []) as Project[]).map((row) =>
     normalizeProjectRow({
@@ -96,6 +140,9 @@ export async function deleteProject(projectId: string, confirmationPhrase: strin
     throw new Error("Confirmation phrase did not match.")
   }
 
+  const userId = await requireUserId()
+  await assertProjectOwned(projectId, userId)
+
   const db = getSupabaseAdmin()
   const { error } = await db.from("projects").delete().eq("id", projectId)
   if (error) throw new Error(error.message)
@@ -108,6 +155,7 @@ export async function updateProjectProfile(
   projectId: string,
   fields: Partial<{ title: string; description: string; emoji: string }>,
 ): Promise<Project> {
+  await ensureProjectAccess(projectId)
   const update: Record<string, string> = {}
   if (fields.title !== undefined) {
     update.title = fields.title.trim().slice(0, 120) || DEFAULT_PROJECT_TITLE
@@ -156,6 +204,7 @@ function normalizeProjectRow(data: Project & { subtitle?: string }): Project {
 }
 
 export async function getProjectBundle(id: string): Promise<ProjectBundle> {
+  const userId = await requireUserId()
   const db = getSupabaseAdmin()
   const [{ data: project }, { data: req }, { data: features }, { data: cards }] =
     await Promise.all([
@@ -174,6 +223,14 @@ export async function getProjectBundle(id: string): Promise<ProjectBundle> {
     ])
 
   if (!project) throw new Error("Project not found")
+  if (userId) {
+    const ownerId = (project as Project).user_id
+    if (ownerId == null) {
+      await claimOrphanProject(id, userId)
+    } else if (ownerId !== userId) {
+      throw new Error("Project not found")
+    }
+  }
 
   const raw = project as Project & { product_design?: ProductDesign | null }
   const design = raw.product_design ?? null
@@ -229,6 +286,7 @@ function normalizeCard(card: TaskCard): TaskCard {
 }
 
 export async function saveChat(projectId: string, chat: ChatMessage[]) {
+  await ensureProjectAccess(projectId)
   const db = getSupabaseAdmin()
   const { error } = await db.from("projects").update({ chat }).eq("id", projectId)
   if (error) throw new Error(error.message)
@@ -247,6 +305,7 @@ export async function generateAndSaveRequirements(
   idea: string,
   chat: ChatMessage[],
 ): Promise<Requirements> {
+  await ensureProjectAccess(projectId)
   const db = getSupabaseAdmin()
   await saveChat(projectId, chat)
 
@@ -270,6 +329,7 @@ export async function finishDiscovery(
   idea: string,
   chat: ChatMessage[],
 ): Promise<{ requirements: Requirements; features: Feature[] }> {
+  await ensureProjectAccess(projectId)
   const db = getSupabaseAdmin()
   await saveChat(projectId, chat)
 
@@ -314,6 +374,7 @@ export async function finishDiscovery(
 export async function generateAndSaveFeatures(
   projectId: string,
 ): Promise<Feature[]> {
+  await ensureProjectAccess(projectId)
   const db = getSupabaseAdmin()
   const { data: req } = await db
     .from("requirements")
@@ -347,6 +408,7 @@ export async function generateAndSaveFeatures(
 export async function generateAndSaveDesign(
   projectId: string,
 ): Promise<ProductDesign> {
+  await ensureProjectAccess(projectId)
   const db = getSupabaseAdmin()
   const [{ data: project }, { data: req }, { data: features }] =
     await Promise.all([
@@ -389,6 +451,7 @@ export async function saveProductDesign(
   projectId: string,
   design: ProductDesign,
 ): Promise<ProductDesign> {
+  await ensureProjectAccess(projectId)
   const db = getSupabaseAdmin()
   const { error } = await db
     .from("projects")
@@ -404,6 +467,7 @@ export async function updateFeaturePriority(
   projectId: string,
   priority: FeaturePriority,
 ) {
+  await ensureProjectAccess(projectId)
   const db = getSupabaseAdmin()
   const { error } = await db
     .from("features")
@@ -418,6 +482,7 @@ export async function updateFeatureText(
   projectId: string,
   fields: { name?: string; reasoning?: string },
 ) {
+  await ensureProjectAccess(projectId)
   const db = getSupabaseAdmin()
   const patch: { name?: string; reasoning?: string } = {}
   if (fields.name !== undefined) patch.name = fields.name.trim()
@@ -505,6 +570,7 @@ export async function updateFeatureSortOrder(
   projectId: string,
   orderedFeatureIds: string[],
 ): Promise<Feature[]> {
+  await ensureProjectAccess(projectId)
   const db = getSupabaseAdmin()
   const { data: features, error } = await db
     .from("features")
@@ -544,6 +610,7 @@ export async function updateFoundationPrompt(
   projectId: string,
   foundation_prompt: string,
 ): Promise<Project> {
+  await ensureProjectAccess(projectId)
   const db = getSupabaseAdmin()
   const { data, error } = await db
     .from("projects")
@@ -559,6 +626,7 @@ export async function updateFoundationPrompt(
 export async function generateAndSaveFoundationPrompt(
   projectId: string,
 ): Promise<string> {
+  await ensureProjectAccess(projectId)
   const db = getSupabaseAdmin()
   const [{ data: req }, { data: features }] = await Promise.all([
     db.from("requirements").select("*").eq("project_id", projectId).single(),
@@ -597,6 +665,7 @@ export async function updateFeatureVerify(
   projectId: string,
   verify: string,
 ) {
+  await ensureProjectAccess(projectId)
   const db = getSupabaseAdmin()
   const { error } = await db
     .from("features")
@@ -612,6 +681,7 @@ export async function updateCardAiPrompt(
   projectId: string,
   ai_prompt: string,
 ) {
+  await ensureProjectAccess(projectId)
   const db = getSupabaseAdmin()
   const { error } = await db
     .from("cards")
@@ -634,9 +704,11 @@ export interface BlueprintSaveResult {
 export async function generateAndSaveCards(
   projectId: string,
 ): Promise<BlueprintSaveResult> {
+  await ensureProjectAccess(projectId)
+  const userId = await requireUserId()
   const tier = resolveBillingTier()
   const [blueprintProjects, hasBlueprint] = await Promise.all([
-    countBlueprintProjects(),
+    countBlueprintProjects(userId ?? undefined),
     projectHasBlueprint(projectId),
   ])
   if (!canCreateBlueprint(tier, blueprintProjects, hasBlueprint)) {
@@ -799,6 +871,7 @@ export async function updateCardStatus(
   projectId: string,
   status: CardStatus,
 ) {
+  await ensureProjectAccess(projectId)
   const db = getSupabaseAdmin()
   const { error } = await db
     .from("cards")

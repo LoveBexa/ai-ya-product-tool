@@ -23,14 +23,14 @@ const PROCESS = [
   },
   {
     step: 2,
-    title: "Define",
+    title: "Features",
     body: "Clarify your product, scope, and priorities.",
     icon: FileText,
     accent: "mint",
   },
   {
     step: 3,
-    title: "Design",
+    title: "Journey",
     body: "Map the experience, flows, screens, and data.",
     icon: LayoutGrid,
     accent: "lilac",

@@ -8,8 +8,15 @@ import { ProjectBottomBar } from "./project-bottom-bar"
 import { ProjectSidebarNav } from "./project-sidebar-nav"
 import { PhaseNav } from "./phase-nav"
 import { useProject } from "./project-context"
+import type { Profile } from "@/lib/types"
 
-export function ProjectShell({ children }: { children: React.ReactNode }) {
+export function ProjectShell({
+  children,
+  profile = null,
+}: {
+  children: React.ReactNode
+  profile?: Profile | null
+}) {
   const pathname = usePathname()
   const { bundle } = useProject()
   const lockViewport = /\/discover(?:\/|$)/.test(pathname)
@@ -24,7 +31,7 @@ export function ProjectShell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-30 shrink-0 border-b border-border bg-background/85 backdrop-blur-md">
         <div className="flex h-14 w-full items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <BrandMark href="/start" showTagline={false} />
-          <AccountMenu />
+          <AccountMenu initialProfile={profile} />
         </div>
       </header>
 

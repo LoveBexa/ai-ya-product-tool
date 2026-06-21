@@ -9,6 +9,7 @@
 
 create table if not exists projects (
   id          uuid primary key default gen_random_uuid(),
+  user_id     uuid references auth.users(id) on delete cascade,
   title       text not null,
   description text not null default '',
   emoji       text not null default '',
@@ -74,5 +75,8 @@ create table if not exists cards (
 create index if not exists idx_features_project on features(project_id);
 create index if not exists idx_cards_project    on cards(project_id);
 create index if not exists idx_cards_feature    on cards(feature_id);
+create index if not exists idx_projects_user    on projects(user_id);
+
+-- ---- Profiles (auth.users 1:1) — run scripts/migrations/005-auth-profiles.sql ----
 
 -- ---- Existing DB? Run scripts/migrations/migrate-all.sql once ----

@@ -10,9 +10,7 @@ export async function POST(req: Request) {
     const {
       messages,
       idea,
-      model,
-    }: { messages: UIMessage[]; idea?: string; model?: string } =
-      await req.json()
+    }: { messages: UIMessage[]; idea?: string } = await req.json()
 
     const system = idea
       ? `${DISCOVERY_SYSTEM}\n\nThe founder's initial one-line idea was: "${idea}". Begin discovery from there.`
@@ -20,7 +18,7 @@ export async function POST(req: Request) {
 
     const result = streamText({
       maxRetries: 0,
-      model: resolveChatModel(model),
+      model: resolveChatModel(),
       system,
       messages: await convertToModelMessages(messages),
     })

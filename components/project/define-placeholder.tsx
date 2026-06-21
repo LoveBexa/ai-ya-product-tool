@@ -55,7 +55,7 @@ export function DefinePlaceholder() {
       title="Your MVP cut isn't ready yet"
       description="Generate requirements from your discovery chat to populate must-have, later, and ignore features."
       actionLabel="Generate requirements"
-      generatingLabel="Building Define board…"
+      generatingLabel="Building Features board…"
       generating={generating}
       error={error}
       goBackTo={goBackTo}

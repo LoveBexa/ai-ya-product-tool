@@ -1,6 +1,6 @@
 import { generateText, Output } from "ai"
 import { z } from "zod"
-import { BA_MODEL } from "./model"
+import { getBAModel } from "./model"
 import {
   REQUIREMENTS_SYSTEM,
   FEATURES_SYSTEM,
@@ -56,7 +56,7 @@ export async function generateRequirements(
   idea: string,
 ): Promise<RequirementsDraft> {
   const { output } = await generateStructured({
-    model: BA_MODEL,
+    model: getBAModel(),
     system: REQUIREMENTS_SYSTEM,
     prompt: `Initial idea: "${idea}"\n\nDiscovery conversation:\n${transcript(messages)}\n\nWrite the requirements brief.`,
     output: Output.object({ schema: requirementsSchema }),
@@ -78,7 +78,7 @@ export async function generateFeatures(
   req: RequirementsDraft,
 ): Promise<FeatureDraft[]> {
   const { output } = await generateStructured({
-    model: BA_MODEL,
+    model: getBAModel(),
     system: FEATURES_SYSTEM,
     prompt: `Requirements brief:
 - Audience: ${req.audience}
@@ -110,7 +110,7 @@ export async function generateDiscoveryBundle(
   idea: string,
 ): Promise<{ requirements: RequirementsDraft; features: FeatureDraft[] }> {
   const { output } = await generateStructured({
-    model: BA_MODEL,
+    model: getBAModel(),
     system: DISCOVERY_OUTPUT_SYSTEM,
     prompt: `Initial idea: "${idea}"\n\nDiscovery conversation:\n${transcript(messages)}\n\nWrite the requirements brief and prioritized MVP feature list.`,
     output: Output.object({ schema: discoveryBundleSchema }),
@@ -141,7 +141,7 @@ export async function generateQueueItem(
   req: RequirementsDraft,
 ): Promise<QueueItemResult> {
   const { output } = await generateStructured({
-    model: BA_MODEL,
+    model: getBAModel(),
     system: QUEUE_SYSTEM,
     prompt: `Product context — Solution: ${req.solution}. Audience: ${req.audience}.
 
@@ -210,7 +210,7 @@ export async function generateBlueprintBatch(
 
   const { output } = await generateStructured(
     {
-      model: BA_MODEL,
+      model: getBAModel(),
       system: QUEUE_BATCH_SYSTEM,
       prompt: `${context}
 
@@ -256,7 +256,7 @@ export async function generateFoundationPrompt(
     .join("\n")
 
   const { output } = await generateStructured({
-    model: BA_MODEL,
+    model: getBAModel(),
     system: FOUNDATION_SYSTEM,
     prompt: `Requirements brief:
 - Audience: ${req.audience}
@@ -308,7 +308,7 @@ export async function generateDesign(
     .join("\n")
 
   const { output } = await generateStructured({
-    model: BA_MODEL,
+    model: getBAModel(),
     system: DESIGN_SYSTEM,
     prompt: `Product idea: "${idea}"
 

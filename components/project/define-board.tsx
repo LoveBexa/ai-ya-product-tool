@@ -17,7 +17,6 @@ const COLUMNS: {
   label: string
   chip: string
   columnBg: string
-  moveBorder: string
   ring: string
 }[] = [
   {
@@ -25,7 +24,6 @@ const COLUMNS: {
     label: "Must exist",
     chip: "bg-mint text-mint-foreground",
     columnBg: "bg-mint/25",
-    moveBorder: "border-mint/55",
     ring: "ring-mint/50",
   },
   {
@@ -33,7 +31,6 @@ const COLUMNS: {
     label: "Later",
     chip: "bg-yellow text-yellow-foreground",
     columnBg: "bg-yellow/25",
-    moveBorder: "border-yellow/60",
     ring: "ring-yellow/50",
   },
   {
@@ -41,7 +38,6 @@ const COLUMNS: {
     label: "Ignore",
     chip: "bg-lilac text-lilac-foreground",
     columnBg: "bg-lilac/25",
-    moveBorder: "border-lilac/55",
     ring: "ring-lilac/50",
   },
 ]
@@ -110,21 +106,24 @@ function FeatureDetailPanel({
             />
           </div>
           <div>
-            <p className="text-xs font-medium text-muted-foreground">Move to</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {COLUMNS.filter((c) => c.key !== feature.priority).map((c) => (
-                <Button
-                  key={c.key}
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className={cn("rounded-full", c.moveBorder)}
-                  onClick={() => onMove(c.key)}
-                >
+            <label
+              htmlFor="feature-column"
+              className="text-xs font-medium text-muted-foreground"
+            >
+              Column
+            </label>
+            <select
+              id="feature-column"
+              value={feature.priority}
+              onChange={(e) => onMove(e.target.value as FeaturePriority)}
+              className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {COLUMNS.map((c) => (
+                <option key={c.key} value={c.key}>
                   {c.label}
-                </Button>
+                </option>
               ))}
-            </div>
+            </select>
           </div>
         </div>
       </div>
@@ -310,10 +309,7 @@ export function DefineBoard({
         <FeatureDetailPanel
           feature={detailFeature}
           onClose={() => setDetailId(null)}
-          onMove={(priority) => {
-            move(detailFeature, priority)
-            setDetailId(null)
-          }}
+          onMove={(priority) => move(detailFeature, priority)}
           onSave={(fields) => saveText(detailFeature, fields)}
         />
       )}

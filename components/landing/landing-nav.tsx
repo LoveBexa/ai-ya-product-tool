@@ -65,23 +65,31 @@ export function LandingNav({ dark = true }: { dark?: boolean }) {
             ))}
           </nav>
 
-          <Link
-            href="/start"
-            className="inline-flex h-9 shrink-0 items-center justify-center rounded-full bg-mint px-5 text-sm font-medium text-mint-foreground transition-opacity hover:opacity-90"
-          >
-            Start a project
-          </Link>
+          <div className="flex shrink-0 items-center gap-2">
+            <Link href="/login" className={linkClass}>
+              Sign in
+            </Link>
+            <Link
+              href="/start"
+              className="inline-flex h-9 shrink-0 items-center justify-center rounded-full bg-mint px-5 text-sm font-medium text-mint-foreground transition-opacity hover:opacity-90"
+            >
+              Start a project
+            </Link>
+          </div>
         </div>
 
         {/* Mobile — logo centered, links sticky below */}
         <div className="lg:hidden">
           <div
             className={cn(
-              "flex h-14 items-center justify-center border-b px-4",
+              "flex h-14 items-center justify-between border-b px-4",
               dark ? "border-white/10" : "border-border",
             )}
           >
             <LogoMark dark={dark} />
+            <Link href="/login" className={cn(linkClass, "text-xs")}>
+              Sign in
+            </Link>
           </div>
           <nav
             className={cn(

@@ -3,6 +3,8 @@ import { AppShell } from "@/components/app-shell"
 import { ProjectProvider } from "@/components/project/project-context"
 import { ProjectLayoutGate } from "@/components/project/project-layout-gate"
 import { isSupabaseConfigured } from "@/lib/supabase/server"
+import { getCurrentProfile } from "@/lib/auth/session"
+import { isAuthEnabled } from "@/lib/auth/config"
 import { getProjectBundle, listProjects } from "@/app/actions/projects"
 
 /** AI server actions (blueprint, design, etc.) can run 30–60s. */
@@ -32,10 +34,12 @@ export default async function ProjectLayout({
 
   let bundle
   let projects
+  let profile = null
   try {
-    ;[bundle, projects] = await Promise.all([
+    ;[bundle, projects, profile] = await Promise.all([
       getProjectBundle(id),
       listProjects(),
+      isAuthEnabled() ? getCurrentProfile() : Promise.resolve(null),
     ])
   } catch (e) {
     if (e instanceof Error && /not found/i.test(e.message)) {
@@ -47,7 +51,7 @@ export default async function ProjectLayout({
   return (
     <AppShell showHeader={false}>
       <ProjectProvider initial={bundle} projects={projects}>
-        <ProjectLayoutGate>{children}</ProjectLayoutGate>
+        <ProjectLayoutGate profile={profile}>{children}</ProjectLayoutGate>
       </ProjectProvider>
     </AppShell>
   )

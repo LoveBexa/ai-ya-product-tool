@@ -45,8 +45,8 @@ export function getJourneySteps(bundle: ProjectBundle): JourneySteps {
     design,
     execute,
     discoverLabel: "Discover — problem and audience clear",
-    defineLabel: "Define — MVP cut set",
-    designLabel: "Design — flows and screens mapped",
+    defineLabel: "Features — MVP cut set",
+    designLabel: "Journey — flows and screens mapped",
     executeLabel: hasExecuteCards
       ? "Blueprint — ready to export"
       : "Blueprint — assemble your export",

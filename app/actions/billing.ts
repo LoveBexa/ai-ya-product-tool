@@ -15,6 +15,7 @@ import {
   countProjects,
   projectHasBlueprint,
 } from "@/lib/billing/quota.server"
+import { requireUserId } from "@/lib/auth/session"
 
 export interface TierUsageSnapshot {
   tier: BillingTier
@@ -39,10 +40,11 @@ export interface TierLimitsSnapshot {
 export async function getTierUsage(
   projectId?: string,
 ): Promise<TierUsageSnapshot> {
+  const userId = await requireUserId()
   const tier = resolveBillingTier()
   const [projects, blueprints, hasBlueprint] = await Promise.all([
-    countProjects(),
-    countBlueprintProjects(),
+    countProjects(userId ?? undefined),
+    countBlueprintProjects(userId ?? undefined),
     projectId ? projectHasBlueprint(projectId) : Promise.resolve(false),
   ])
 

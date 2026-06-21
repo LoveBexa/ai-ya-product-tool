@@ -78,6 +78,12 @@ export function flowRefsForScreen(
     .sort((a, b) => a.step - b.step)
 }
 
+/** Single-line flow chain for screen cards, e.g. "1.Sign up ---> 2.Profile" */
+export function formatScreenFlowLine(flowRefs: ScreenFlowRef[]): string | null {
+  if (flowRefs.length === 0) return null
+  return flowRefs.map((ref) => `${ref.step}.${ref.label}`).join(" ---> ")
+}
+
 export function resolveWorkflowLabels(design: ProductDesign, workflowIds: string[]): string[] {
   return workflowIds
     .map((id) => design.workflow.find((w) => w.id === id)?.label)

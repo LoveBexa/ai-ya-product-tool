@@ -1,19 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
-
-const DEFAULT_MODEL = "gemini-2.0-flash"
-
-/** Discover chat always uses the default free-tier Gemini model. */
+/** Discover chat model is chosen server-side via AI_PROVIDER / DEEPSEEK_MODEL env vars. */
 export function useDiscoverChatModel() {
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    setLoading(false)
-  }, [])
-
-  return {
-    modelId: DEFAULT_MODEL,
-    loading,
-  }
+  return { loading: false }
 }

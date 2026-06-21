@@ -49,14 +49,14 @@ export function getDesignGenerateBlocker(
     return {
       stop: "discover",
       message:
-        "Finish Discover first — generate requirements before creating design flows.",
+        "Finish Discover first — generate requirements before mapping the journey.",
     }
   }
   if (!bundle.features.some((f) => f.priority === "must")) {
     return {
       stop: "define",
       message:
-        "Add at least one Must Have feature on Define before creating design flows.",
+        "Add at least one Must Have feature before mapping the journey.",
     }
   }
   return null
@@ -77,14 +77,14 @@ export function getBlueprintGenerateBlocker(
     return {
       stop: "define",
       message:
-        "Add at least one Must Have feature on Define before creating your blueprint.",
+        "Add at least one Must Have feature before creating your blueprint.",
     }
   }
   if (!bundle.design) {
     return {
       stop: "design",
       message:
-        "Create design flows first — your blueprint needs flows, screens, and schema.",
+        "Map the journey first — your blueprint needs flows, screens, and schema.",
     }
   }
   return null

@@ -4,6 +4,7 @@ import {
   isVercelServerless,
   parseRetryAfterSeconds,
 } from "@/lib/ai/quota-retry"
+import { resolveProvider } from "@/lib/ai/model"
 
 function unwrapAiError(error: unknown): unknown {
   if (!error || typeof error !== "object") return error
@@ -33,17 +34,31 @@ export function formatAiError(error: unknown): string {
     return formatAiError(message.replace(/^Failed after \d+ attempts\. Last error: /, ""))
   }
 
+  if (/insufficient balance|402/i.test(message)) {
+    return (
+      "DeepSeek API balance is empty. DeepSeek has no permanent free tier — new accounts get a one-time credit grant, then pay-as-you-go. " +
+      "Top up at https://platform.deepseek.com/top_up or switch AI_PROVIDER=google in .env.local to use Gemini."
+    )
+  }
+
   if (isQuotaError(message)) {
     const hinted = parseRetryAfterSeconds(message)
     const waitHint = hinted
       ? isVercelServerless()
-        ? ` Wait a minute, then try again (Google estimated ${hinted}s — auto-retry is limited on hosted deploys).`
-        : ` Wait at least ${hinted + 10} seconds before retrying (Google estimated ${hinted}s — add a little buffer). If it still fails, wait a full minute; free tier limits are per-minute.`
-      : " Wait 60 seconds before trying again — free tier limits reset each minute."
+        ? ` Wait a minute, then try again (provider estimated ${hinted}s — auto-retry is limited on hosted deploys).`
+        : ` Wait at least ${hinted + 10} seconds before retrying (provider estimated ${hinted}s — add a little buffer). If it still fails, wait a full minute.`
+      : " Wait 60 seconds before trying again — rate limits often reset each minute."
+
+    if (resolveProvider() === "deepseek") {
+      return (
+        `DeepSeek rate limit or quota hit.${waitHint} ` +
+        `Check usage at https://platform.deepseek.com or switch AI_PROVIDER=google in your env.`
+      )
+    }
 
     return (
       `Gemini free-tier limit hit for this model.${waitHint} ` +
-      `Use gemini-2.0-flash in .env.local for a separate quota, pace discovery chat, or see https://ai.google.dev/pricing`
+      `Switch GOOGLE_MODEL, pace discovery chat, set AI_PROVIDER=deepseek, or see https://ai.google.dev/pricing`
     )
   }
 

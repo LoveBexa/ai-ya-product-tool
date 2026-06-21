@@ -2,7 +2,9 @@ import { ProjectsHome } from "@/components/home/projects-home"
 import { isSupabaseConfigured } from "@/lib/supabase/server"
 import { listProjects } from "@/app/actions/projects"
 import { getTierUsage } from "@/app/actions/billing"
-import type { Project } from "@/lib/types"
+import { getCurrentProfile } from "@/lib/auth/session"
+import { isAuthEnabled } from "@/lib/auth/config"
+import type { Profile, Project } from "@/lib/types"
 
 export const metadata = {
   title: "Start a project — AIYA",
@@ -14,9 +16,13 @@ export default async function StartPage() {
   let projects: Project[] = []
   let loadError: string | null = null
   let tierUsage = null
+  let profile: Profile | null = null
 
   if (configured) {
     try {
+      if (isAuthEnabled()) {
+        profile = await getCurrentProfile()
+      }
       ;[projects, tierUsage] = await Promise.all([
         listProjects(),
         getTierUsage(),
@@ -32,6 +38,7 @@ export default async function StartPage() {
       projects={projects}
       loadError={loadError}
       tierUsage={tierUsage}
+      profile={profile}
     />
   )
 }

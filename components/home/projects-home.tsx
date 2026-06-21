@@ -12,21 +12,23 @@ import {
 } from "@/lib/home/project-card-meta"
 import { projectContinueHref } from "@/lib/journey/onboarding"
 import type { TierUsageSnapshot } from "@/app/actions/billing"
-import type { Project } from "@/lib/types"
+import type { Profile, Project } from "@/lib/types"
 
 export function ProjectsHome({
   configured,
   projects,
   loadError,
   tierUsage,
+  profile = null,
 }: {
   configured: boolean
   projects: Project[]
   loadError: string | null
   tierUsage: TierUsageSnapshot | null
+  profile?: Profile | null
 }) {
   return (
-    <AppShell>
+    <AppShell profile={profile}>
       <div className="mx-auto w-full max-w-2xl px-4 py-12 sm:px-6 sm:py-16">
         {!configured && <SetupNotice className="mb-10" />}
 

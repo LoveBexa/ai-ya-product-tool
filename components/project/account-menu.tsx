@@ -1,18 +1,42 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import { ChevronDown } from "lucide-react"
+import { useEffect, useRef, useState, useTransition } from "react"
+import Link from "next/link"
+import { ChevronDown, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { UserAvatar } from "@/components/auth/user-avatar"
+import { getProfileForMenu, signOutAction } from "@/app/actions/profile"
+import { isAuthEnabled } from "@/lib/auth/config"
+import type { Profile } from "@/lib/types"
 
-export function AccountMenu({ className }: { className?: string }) {
+export function AccountMenu({
+  className,
+  initialProfile = null,
+}: {
+  className?: string
+  initialProfile?: Profile | null
+}) {
   const [open, setOpen] = useState(false)
-  const [name, setName] = useState("Your name")
+  const [profile, setProfile] = useState<Profile | null>(initialProfile)
+  const [loading, setLoading] = useState(!initialProfile && isAuthEnabled())
+  const [signingOut, startSignOut] = useTransition()
   const rootRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const saved = localStorage.getItem("aiya-user-name")
-    if (saved?.trim()) setName(saved.trim())
-  }, [])
+    if (initialProfile) {
+      setProfile(initialProfile)
+      setLoading(false)
+      return
+    }
+    if (!isAuthEnabled()) {
+      setLoading(false)
+      return
+    }
+    getProfileForMenu()
+      .then(setProfile)
+      .catch(() => setProfile(null))
+      .finally(() => setLoading(false))
+  }, [initialProfile])
 
   useEffect(() => {
     if (!open) return
@@ -23,7 +47,43 @@ export function AccountMenu({ className }: { className?: string }) {
     return () => document.removeEventListener("mousedown", onPointerDown)
   }, [open])
 
-  const initial = name.charAt(0).toUpperCase() || "?"
+  if (!isAuthEnabled()) {
+    return (
+      <Link
+        href="/login"
+        className={cn(
+          "rounded-full border border-border px-3 py-1.5 text-sm font-medium hover:bg-secondary",
+          className,
+        )}
+      >
+        Sign in
+      </Link>
+    )
+  }
+
+  if (loading) {
+    return (
+      <span className={cn("flex h-9 w-9 items-center justify-center", className)}>
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      </span>
+    )
+  }
+
+  if (!profile) {
+    return (
+      <Link
+        href="/login"
+        className={cn(
+          "rounded-full border border-border px-3 py-1.5 text-sm font-medium hover:bg-secondary",
+          className,
+        )}
+      >
+        Sign in
+      </Link>
+    )
+  }
+
+  const displayName = profile.name || profile.email.split("@")[0] || "Account"
 
   return (
     <div ref={rootRef} className={cn("relative", className)}>
@@ -34,12 +94,12 @@ export function AccountMenu({ className }: { className?: string }) {
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2 rounded-xl px-1 py-1 transition-colors hover:bg-secondary"
       >
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-bold text-foreground">
-          {initial}
-        </span>
+        <UserAvatar profile={profile} size="sm" />
         <div className="hidden min-w-0 text-left sm:block">
-          <p className="truncate text-sm font-medium">{name}</p>
-          <p className="truncate text-[10px] text-muted-foreground">Account</p>
+          <p className="max-w-[8rem] truncate text-sm font-medium">{displayName}</p>
+          <p className="max-w-[8rem] truncate text-[10px] text-muted-foreground">
+            {profile.email}
+          </p>
         </div>
         <ChevronDown
           className={cn(
@@ -52,23 +112,27 @@ export function AccountMenu({ className }: { className?: string }) {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full z-50 mt-2 min-w-[9rem] overflow-hidden rounded-xl border border-border bg-card py-1 shadow-lg"
+          className="absolute right-0 top-full z-50 mt-2 min-w-[10rem] overflow-hidden rounded-xl border border-border bg-card py-1 shadow-lg"
         >
-          <button
-            type="button"
+          <Link
+            href="/settings"
             role="menuitem"
-            className="block w-full px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
             onClick={() => setOpen(false)}
+            className="block px-3 py-2 text-sm transition-colors hover:bg-secondary"
           >
             Settings
-          </button>
+          </Link>
           <button
             type="button"
             role="menuitem"
-            className="block w-full px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-            onClick={() => setOpen(false)}
+            disabled={signingOut}
+            className="block w-full px-3 py-2 text-left text-sm transition-colors hover:bg-secondary disabled:opacity-50"
+            onClick={() => {
+              setOpen(false)
+              startSignOut(() => signOutAction())
+            }}
           >
-            Logout
+            {signingOut ? "Signing out…" : "Log out"}
           </button>
         </div>
       )}

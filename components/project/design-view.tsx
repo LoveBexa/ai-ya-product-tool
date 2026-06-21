@@ -10,23 +10,40 @@ import { useProject } from "./project-context"
 import { StageGeneratePanel } from "./stage-generate-panel"
 import { DisclosureSection } from "./disclosure-section"
 import { FlowChain } from "./design-artifacts"
-import { DefineTraceBadge, FlowTraceBadge } from "./design-trace-badges"
 import { SchemaBlueprintPanel } from "./schema-blueprint-panel"
 import { Textarea } from "@/components/ui/textarea"
+import { cn } from "@/lib/utils"
 import type { ProductDesign } from "@/lib/types/design"
 import type { Feature } from "@/lib/types"
 import type { SchemaBlueprint } from "@/lib/design/schema-blueprint"
-import { featureNames, flowRefsForScreen, type ScreenFlowRef } from "@/lib/pipeline/trace"
+import {
+  featureNames,
+  flowRefsForScreen,
+  formatScreenFlowLine,
+  type ScreenFlowRef,
+} from "@/lib/pipeline/trace"
 
-function ArtifactMeta({ features, featureIds }: { features: Feature[]; featureIds: string[] }) {
-  const names = featureNames(features, featureIds)
-  if (names.length === 0) return null
+function ScreenMetaRow({
+  label,
+  value,
+  tone,
+}: {
+  label: string
+  value: string
+  tone: "lilac" | "mint"
+}) {
   return (
-    <div className="mt-2 flex flex-wrap gap-1">
-      {names.map((name) => (
-        <DefineTraceBadge key={name} featureName={name} />
-      ))}
-    </div>
+    <p className="text-[11px] leading-relaxed sm:text-xs">
+      <span
+        className={cn(
+          "font-bold uppercase tracking-wider",
+          tone === "lilac" ? "text-lilac-foreground" : "text-mint-foreground",
+        )}
+      >
+        {label}{" "}
+      </span>
+      <span className="font-medium text-foreground/90">{value}</span>
+    </p>
   )
 }
 
@@ -44,38 +61,63 @@ function ScreenCard({
   onPurposeChange?: (purpose: string) => void
 }) {
   const [purpose, setPurpose] = useState(screen.purpose)
+  const flowLine = formatScreenFlowLine(flowRefs)
+  const linkedFeatures = featureNames(features, screen.feature_ids)
+  const featureLabel =
+    linkedFeatures.length === 1 ? "Feature:" : "Feature(s):"
 
   useEffect(() => {
     setPurpose(screen.purpose)
   }, [screen.purpose])
 
   return (
-    <li className="rounded-xl border border-border bg-card p-3">
-      <p className="text-sm font-semibold">{screen.name}</p>
-      {flowRefs.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1">
-          {flowRefs.map((ref) => (
-            <FlowTraceBadge key={`${ref.step}-${ref.label}`} step={ref.step} label={ref.label} />
-          ))}
+    <li className="flex flex-col overflow-hidden rounded-2xl border border-border/80 bg-card shadow-[0_4px_22px_-14px_rgba(0,0,0,0.18)] transition-shadow hover:shadow-[0_8px_30px_-14px_rgba(0,0,0,0.22)]">
+      <div className="border-b border-border/50 bg-gradient-to-br from-secondary/50 to-secondary/20 px-4 py-3.5">
+        <h3 className="text-sm font-semibold leading-snug tracking-tight text-foreground">
+          {screen.name}
+        </h3>
+      </div>
+
+      {(flowLine || linkedFeatures.length > 0) && (
+        <div className="space-y-2.5 border-b border-border/40 bg-background/80 px-4 py-3">
+          {flowLine && (
+            <ScreenMetaRow label="Flow:" value={flowLine} tone="lilac" />
+          )}
+          {linkedFeatures.length > 0 && (
+            <ScreenMetaRow
+              label={featureLabel}
+              value={linkedFeatures.join(", ")}
+              tone="mint"
+            />
+          )}
         </div>
       )}
-      {editable && onPurposeChange ? (
-        <Textarea
-          value={purpose}
-          onChange={(e) => setPurpose(e.target.value)}
-          onBlur={() => {
-            if (purpose !== screen.purpose) onPurposeChange(purpose)
-          }}
-          rows={2}
-          className="mt-2 min-h-0 rounded-xl px-2.5 py-2 text-xs leading-relaxed"
-          aria-label={`Purpose for ${screen.name}`}
-        />
-      ) : (
-        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-          {screen.purpose}
-        </p>
-      )}
-      <ArtifactMeta features={features} featureIds={screen.feature_ids} />
+
+      <div className="flex flex-1 flex-col px-4 py-3.5">
+        <label
+          htmlFor={`screen-purpose-${screen.id}`}
+          className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+        >
+          Purpose
+        </label>
+        {editable && onPurposeChange ? (
+          <Textarea
+            id={`screen-purpose-${screen.id}`}
+            value={purpose}
+            onChange={(e) => setPurpose(e.target.value)}
+            onBlur={() => {
+              if (purpose !== screen.purpose) onPurposeChange(purpose)
+            }}
+            rows={3}
+            className="mt-2 min-h-[4.5rem] resize-none rounded-xl border-border/80 bg-secondary/20 px-3 py-2.5 text-xs leading-relaxed sm:text-sm"
+            aria-label={`Purpose for ${screen.name}`}
+          />
+        ) : (
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+            {screen.purpose}
+          </p>
+        )}
+      </div>
     </li>
   )
 }
@@ -138,14 +180,14 @@ function RegenerateDesignSection() {
             onClick={() => setConfirming(true)}
             className="inline-flex h-10 shrink-0 items-center justify-center rounded-full border border-border bg-card px-5 text-sm font-medium transition-colors hover:bg-secondary"
           >
-            Re-generate design flows
+            Re-generate journey map
           </button>
         </div>
       ) : (
         <div className="space-y-4">
           <p className="text-sm text-alert-text">
             This will replace your current user flows, screen inventory, and
-            schema blueprint with a fresh version based on your Define must-haves
+            schema blueprint with a fresh version based on your must-have features
             and Discover requirements. Edits to screen purposes will be lost.
           </p>
           <div className="flex flex-wrap gap-2">
@@ -207,17 +249,17 @@ export function DesignView({
 
         <DisclosureSection
           title="Screen inventory"
-          subtitle={`${design.screens.length} screens — grouped by user flow above`}
+          subtitle={`${design.screens.length} screens linked to flows and features`}
           accentClass="bg-yellow text-yellow-foreground"
           defaultOpen
         >
           {editable && (
-            <p className="mb-2 text-xs text-muted-foreground">
-              Each screen shows which user-flow step it belongs to. Edit the
-              explanation text — titles stay fixed for now.
+            <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
+              Each card shows which flow steps and features it supports. Edit the
+              purpose text below the metadata.
             </p>
           )}
-          <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
             {design.screens.map((screen) => (
               <ScreenCard
                 key={screen.id}
@@ -266,10 +308,10 @@ export function DesignPlaceholder() {
 
   return (
     <StageGeneratePanel
-      title="Preparing your design"
-      description="Flows and a screen inventory from your must-haves will appear here."
-      actionLabel="Create design flows"
-      generatingLabel="Creating flows…"
+      title="Preparing your journey"
+      description="User flows and a screen inventory from your must-haves will appear here."
+      actionLabel="Map the journey"
+      generatingLabel="Mapping journey…"
       generating={generating}
       error={error}
       goBackTo={goBackTo}

@@ -20,7 +20,7 @@ export function formatFeaturesContext(features: Feature[]): string {
       ? "(none)"
       : list.map((f) => `- ${f.name}: ${f.reasoning}`).join("\n")
 
-  return `## MVP scope (Define)
+  return `## MVP scope (Features)
 ### Must have (build these)
 ${formatList(byPriority("must"))}
 

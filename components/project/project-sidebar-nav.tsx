@@ -27,7 +27,7 @@ const NAV = [
   },
   {
     href: "/define",
-    label: "Define",
+    label: "Features",
     step: "2",
     journeyKey: "define" as const,
     icon: PenTool,
@@ -35,7 +35,7 @@ const NAV = [
   },
   {
     href: "/design",
-    label: "Design",
+    label: "Journey",
     step: "3",
     journeyKey: "design" as const,
     icon: Palette,

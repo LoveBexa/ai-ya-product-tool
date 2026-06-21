@@ -76,7 +76,7 @@ export function BlueprintPlaceholder() {
   return (
     <StageGeneratePanel
       title="Your blueprint isn't ready yet"
-      description="Pulls together Discover, Define, and Design into one export — spec, flows, schema, foundation prompt, and ordered feature steps."
+      description="Pulls together Discover, Features, and Journey into one export — spec, flows, schema, foundation prompt, and ordered feature steps."
       actionLabel="Create blueprint"
       generatingLabel="Creating blueprint…"
       generating={generating}

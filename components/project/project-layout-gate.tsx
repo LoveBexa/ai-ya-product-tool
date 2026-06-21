@@ -7,8 +7,15 @@ import { useProject } from "./project-context"
 import { OnboardingShell } from "./onboarding-shell"
 import { ProjectShell } from "./project-shell"
 import { WorkspaceFlow } from "./workspace-flow"
+import type { Profile } from "@/lib/types"
 
-export function ProjectLayoutGate({ children }: { children: React.ReactNode }) {
+export function ProjectLayoutGate({
+  children,
+  profile = null,
+}: {
+  children: React.ReactNode
+  profile?: Profile | null
+}) {
   const pathname = usePathname()
   const router = useRouter()
   const { bundle } = useProject()
@@ -29,5 +36,5 @@ export function ProjectLayoutGate({ children }: { children: React.ReactNode }) {
     )
   }
 
-  return <ProjectShell>{children}</ProjectShell>
+  return <ProjectShell profile={profile}>{children}</ProjectShell>
 }

@@ -244,7 +244,7 @@ export function OverviewDashboard() {
             href={`/projects/${projectId}/design`}
             className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-medium text-primary-foreground hover:opacity-90 sm:w-auto sm:min-w-[14rem]"
           >
-            Hand off to UX Designer <ArrowRight className="h-4 w-4" />
+            Hand off to Journey <ArrowRight className="h-4 w-4" />
           </Link>
         )}
         {journey.discover === "current" && (
@@ -260,7 +260,7 @@ export function OverviewDashboard() {
             href={`/projects/${projectId}/define`}
             className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-medium text-primary-foreground hover:opacity-90 sm:w-auto sm:min-w-[14rem]"
           >
-            Hand off to Product Manager <ArrowRight className="h-4 w-4" />
+            Hand off to Features <ArrowRight className="h-4 w-4" />
           </Link>
         )}
       </section>

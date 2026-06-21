@@ -31,14 +31,14 @@ const STOP_MATCH: Record<JourneyStop, RegExp> = {
 export const STOP_LABEL: Record<JourneyStop, string> = {
   overview: "Overview",
   discover: "Discover",
-  define: "Define",
-  design: "Design",
+  define: "Features",
+  design: "Journey",
   execute: "Blueprint",
 }
 
 /** Primary forward action on each step (bottom-right in phase nav). */
 export const NEXT_STEP_CTA: Partial<Record<JourneyStop, string>> = {
-  define: "Design flows",
+  define: "Map journey",
 }
 
 export function nextStepLabel(from: JourneyStop, to: JourneyStop): string {

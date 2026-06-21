@@ -14,6 +14,7 @@ export type ProjectStage =
 
 export interface Project {
   id: string
+  user_id: string | null
   title: string
   description: string
   emoji: string
@@ -29,6 +30,19 @@ export interface Project {
 export interface ChatMessage {
   role: "user" | "assistant"
   content: string
+}
+
+export type AvatarSource = "google" | "emoji"
+
+export interface Profile {
+  id: string
+  email: string
+  name: string
+  avatar_url: string | null
+  emoji: string
+  avatar_source: AvatarSource
+  created_at: string
+  updated_at: string
 }
 
 export interface Requirements {
