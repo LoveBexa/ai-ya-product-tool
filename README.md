@@ -1,5 +1,11 @@
 # AIYA
 
+📊 **Pitch Deck / Presentation**  
+[View Presentation](https://drive.google.com/file/d/1eE3KMcR1-OZj-QX2oxhbPdlkW_5p9bDV/view?usp=sharing)
+
+🎥 **Product Demo Video**  
+[Watch Demo](https://drive.google.com/file/d/1d9Nu0IpS-zMOS23NJoz6AViNPtsAcb37/view?usp=sharing)
+
 **Clarity before code. Build with confidence.**
 
 AIYA is an AI product partner for founders, indie hackers, and first-time builders. It helps you **think before you build** — turning messy ideas into a clear, editable **blueprint** you can hand to Cursor, Claude Code, v0, or your dev team.
