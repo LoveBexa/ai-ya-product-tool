@@ -5,7 +5,6 @@ import { TierPlanBadge } from "@/components/billing/tier-notice"
 import { SetupNotice } from "@/components/setup-notice"
 import { cn } from "@/lib/utils"
 import {
-import {
   blueprintProgress,
   blueprintProgressLabel,
   resolveProjectEmoji,

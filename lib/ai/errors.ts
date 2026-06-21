@@ -5,8 +5,33 @@ import {
   parseRetryAfterSeconds,
 } from "@/lib/ai/quota-retry"
 
+function unwrapAiError(error: unknown): unknown {
+  if (!error || typeof error !== "object") return error
+
+  const record = error as {
+    lastError?: unknown
+    cause?: unknown
+    errors?: unknown[]
+    message?: string
+  }
+
+  if (record.lastError) return unwrapAiError(record.lastError)
+  if (record.cause) return unwrapAiError(record.cause)
+  if (Array.isArray(record.errors) && record.errors.length > 0) {
+    return unwrapAiError(record.errors[record.errors.length - 1])
+  }
+
+  return error
+}
+
 export function formatAiError(error: unknown): string {
-  const message = error instanceof Error ? error.message : String(error)
+  const root = unwrapAiError(error)
+  const message =
+    root instanceof Error ? root.message : String(root ?? error ?? "")
+
+  if (/Failed after \d+ attempts/.test(message)) {
+    return formatAiError(message.replace(/^Failed after \d+ attempts\. Last error: /, ""))
+  }
 
   if (isQuotaError(message)) {
     const hinted = parseRetryAfterSeconds(message)
@@ -20,10 +45,6 @@ export function formatAiError(error: unknown): string {
       `Gemini free-tier limit hit for this model.${waitHint} ` +
       `Use gemini-2.0-flash in .env.local for a separate quota, pace discovery chat, or see https://ai.google.dev/pricing`
     )
-  }
-
-  if (/Failed after \d+ attempts/.test(message)) {
-    return formatAiError(message.replace(/^Failed after \d+ attempts\. Last error: /, ""))
   }
 
   return message || "AI request failed."

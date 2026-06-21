@@ -6,6 +6,7 @@ import { needsOnboarding, discoverPath } from "@/lib/journey/onboarding"
 import { useProject } from "./project-context"
 import { OnboardingShell } from "./onboarding-shell"
 import { ProjectShell } from "./project-shell"
+import { WorkspaceFlow } from "./workspace-flow"
 
 export function ProjectLayoutGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -21,7 +22,11 @@ export function ProjectLayoutGate({ children }: { children: React.ReactNode }) {
   }, [onboarding, pathname, router, chatPath])
 
   if (onboarding) {
-    return <OnboardingShell>{children}</OnboardingShell>
+    return (
+      <OnboardingShell>
+        <WorkspaceFlow view="discover" />
+      </OnboardingShell>
+    )
   }
 
   return <ProjectShell>{children}</ProjectShell>

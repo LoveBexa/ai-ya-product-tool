@@ -19,13 +19,15 @@ export async function POST(req: Request) {
       : DISCOVERY_SYSTEM
 
     const result = streamText({
-      maxRetries: 1,
+      maxRetries: 0,
       model: resolveChatModel(model),
       system,
       messages: await convertToModelMessages(messages),
     })
 
-    return result.toUIMessageStreamResponse()
+    return result.toUIMessageStreamResponse({
+      onError: (error) => formatAiError(error),
+    })
   } catch (e) {
     const message = formatAiError(e)
     const status = /free-tier limit|quota|rate.?limit/i.test(message) ? 429 : 500
