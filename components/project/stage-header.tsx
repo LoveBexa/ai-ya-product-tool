@@ -5,12 +5,30 @@ import { stageMeta } from "@/lib/journey/specialists"
 export function StageHeader({
   stage,
   handoffSummary,
+  compact = false,
 }: {
   stage: StageId
   handoffSummary?: string
+  compact?: boolean
 }) {
   const meta = stageMeta(stage)
   const from = meta.handoffFrom ? stageMeta(meta.handoffFrom) : null
+
+  if (compact) {
+    return (
+      <header className="min-w-0">
+        <h2 className="text-sm font-semibold leading-snug tracking-tight">
+          <span className="text-muted-foreground">{meta.label}</span>
+          {" · "}
+          {meta.headline.split(" ").slice(0, -1).join(" ")}{" "}
+          <span className="serif-accent">{meta.headline.split(" ").slice(-1)}</span>
+        </h2>
+        <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+          {meta.subtitle}
+        </p>
+      </header>
+    )
+  }
 
   return (
     <header className="mb-6">

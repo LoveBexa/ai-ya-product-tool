@@ -5,6 +5,7 @@ import { BrandMark } from "@/components/brand-mark"
 import { cn } from "@/lib/utils"
 import { AccountMenu } from "./account-menu"
 import { ProjectBottomBar } from "./project-bottom-bar"
+import { ProjectSidebarNav } from "./project-sidebar-nav"
 import { PhaseNav } from "./phase-nav"
 import { useProject } from "./project-context"
 
@@ -27,25 +28,33 @@ export function ProjectShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <main
-          className={cn(
-            "flex min-h-0 w-full flex-1 flex-col",
-            lockViewport
-              ? "overflow-hidden px-4 py-3 sm:px-6 lg:px-8"
-              : "px-4 py-4 pb-24 sm:px-6 sm:py-6 lg:px-8 lg:pb-6",
-          )}
-        >
-          <div
+      <div
+        className={cn(
+          "flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row",
+        )}
+      >
+        <ProjectSidebarNav />
+
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <main
             className={cn(
               "flex min-h-0 w-full flex-1 flex-col",
-              lockViewport && "overflow-hidden",
+              lockViewport
+                ? "overflow-hidden px-3 py-2 pb-24 sm:px-5 lg:px-6 lg:pb-2"
+                : "overflow-auto px-4 py-4 pb-24 sm:px-6 sm:py-6 lg:px-8 lg:pb-6",
             )}
           >
-            {children}
-          </div>
-          {!lockViewport && <PhaseNav projectId={bundle.project.id} />}
-        </main>
+            <div
+              className={cn(
+                "flex min-h-0 w-full flex-1 flex-col",
+                lockViewport && "overflow-hidden",
+              )}
+            >
+              {children}
+            </div>
+            {!lockViewport && <PhaseNav projectId={bundle.project.id} />}
+          </main>
+        </div>
       </div>
 
       <ProjectBottomBar projectId={bundle.project.id} />

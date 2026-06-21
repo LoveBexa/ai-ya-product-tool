@@ -5,8 +5,11 @@ export interface TierLimits {
   maxBlueprints: number
 }
 
+/** TEMP: 2 for local testing — revert to 1 before launch. */
+const FREE_MAX_PROJECTS = 2
+
 export const TIER_LIMITS: Record<BillingTier, TierLimits> = {
-  free: { maxProjects: 1, maxBlueprints: 1 },
+  free: { maxProjects: FREE_MAX_PROJECTS, maxBlueprints: 1 },
   paid: { maxProjects: Number.POSITIVE_INFINITY, maxBlueprints: Number.POSITIVE_INFINITY },
 }
 

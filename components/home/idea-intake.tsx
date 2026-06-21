@@ -77,7 +77,7 @@ export function IdeaIntake({
         What&apos;s your <span className="serif-accent">idea?</span>
       </h1>
       <p className="mt-3 text-center text-sm leading-relaxed text-muted-foreground sm:text-base">
-        AI can write code in minutes. AIYA helps you decide what to build first.
+        AI can write code in minutes. AIYA helps you plan, ideate and decide on a minimal viable project to ship and test before you build.
       </p>
 
       <div className="mt-4 flex flex-wrap justify-center gap-2">

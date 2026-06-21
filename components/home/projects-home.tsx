@@ -79,7 +79,7 @@ export function ProjectsHome({
                               <p className="mt-2 text-xs font-medium text-foreground/80">
                                 {progressLabel}: {progress}%
                               </p>
-                              <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full border border-gray-300/80 bg-gray-200">
+                              <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full border border-mint/50 bg-gray-200">
                                 <div
                                   className="h-full rounded-full bg-mint transition-all"
                                   style={{ width: `${progress}%` }}
