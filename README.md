@@ -1,8 +1,10 @@
 # AIYA
 
-## Demo Video
+📊 **Pitch Deck / Presentation**  
+[View Presentation](https://drive.google.com/file/d/1eE3KMcR1-OZj-QX2oxhbPdlkW_5p9bDV/view?usp=sharing)
 
-[![Watch the demo]([https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg)](https://drive.google.com/file/d/1d9Nu0IpS-zMOS23NJoz6AViNPtsAcb37/view](https://drive.google.com/file/d/1eE3KMcR1-OZj-QX2oxhbPdlkW_5p9bDV/view?usp=sharing))
+🎥 **Product Demo Video**  
+[Watch Demo](https://drive.google.com/file/d/1d9Nu0IpS-zMOS23NJoz6AViNPtsAcb37/view?usp=sharing)
 
 **Clarity before code. Build with confidence.**
 
