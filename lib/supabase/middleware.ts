@@ -54,7 +54,14 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const { pathname } = request.nextUrl
+  const { pathname, searchParams } = request.nextUrl
+
+  // Supabase sometimes redirects OAuth to Site URL (/) with ?code= — forward to our handler.
+  if (pathname === "/" && searchParams.has("code")) {
+    const callback = request.nextUrl.clone()
+    callback.pathname = "/auth/callback"
+    return NextResponse.redirect(callback)
+  }
 
   if (!user && isProtectedPath(pathname) && !isPublicPath(pathname)) {
     const loginUrl = request.nextUrl.clone()
@@ -66,6 +73,15 @@ export async function updateSession(request: NextRequest) {
   if (user && (pathname === "/login" || pathname === "/register")) {
     const next = request.nextUrl.searchParams.get("next")
     const destPath = await getPostLoginRedirectForUser(user.id, next, supabase)
+    const dest = request.nextUrl.clone()
+    dest.pathname = destPath
+    dest.search = ""
+    return NextResponse.redirect(dest)
+  }
+
+  // Signed-in users hitting the marketing homepage → app workspace.
+  if (user && pathname === "/" && !searchParams.has("code")) {
+    const destPath = await getPostLoginRedirectForUser(user.id, "/start", supabase)
     const dest = request.nextUrl.clone()
     dest.pathname = destPath
     dest.search = ""

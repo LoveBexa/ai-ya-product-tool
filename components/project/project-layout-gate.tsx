@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { needsOnboarding, discoverPath } from "@/lib/journey/onboarding"
+import { hasDiscoverySkipped } from "@/lib/journey/onboarding-skip"
 import { useProject } from "./project-context"
 import { OnboardingShell } from "./onboarding-shell"
 import { ProjectShell } from "./project-shell"
@@ -20,15 +21,23 @@ export function ProjectLayoutGate({
   const router = useRouter()
   const { bundle } = useProject()
   const onboarding = needsOnboarding(bundle)
-  const chatPath = discoverPath(bundle.project.id)
+  const projectId = bundle.project.id
+  const chatPath = discoverPath(projectId)
+  const [skippedDiscovery, setSkippedDiscovery] = useState(false)
 
   useEffect(() => {
-    if (!onboarding) return
+    setSkippedDiscovery(hasDiscoverySkipped(projectId))
+  }, [projectId])
+
+  const focusedOnboarding = onboarding && !skippedDiscovery
+
+  useEffect(() => {
+    if (!focusedOnboarding) return
     if (pathname === chatPath || pathname.startsWith(`${chatPath}/`)) return
     router.replace(chatPath)
-  }, [onboarding, pathname, router, chatPath])
+  }, [focusedOnboarding, pathname, router, chatPath])
 
-  if (onboarding) {
+  if (focusedOnboarding) {
     return (
       <OnboardingShell>
         <WorkspaceFlow view="discover" />
