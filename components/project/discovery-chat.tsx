@@ -4,14 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport, type UIMessage } from "ai"
-import { ArrowUp, Loader2, Sparkles } from "lucide-react"
+import { ArrowUp, Loader2, PanelRight, Sparkles, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import type { ChatMessage } from "@/lib/types"
-import {
-  saveChat,
-  finishDiscovery,
-} from "@/app/actions/projects"
+import { saveChat, finishDiscovery } from "@/app/actions/projects"
 import { useProject } from "./project-context"
 import { formatAiError } from "@/lib/ai/errors"
 import { DiscoveryLearnings } from "./discovery-learnings"
@@ -22,12 +19,14 @@ import {
 } from "./discovery-materials-panel"
 import { DiscoveryUploadZone } from "./discovery-upload-zone"
 import { DiscoveryAnalysisMessage } from "./discovery-analysis-message"
-import {
-  ChatModelPicker,
-  useDiscoverChatModel,
-} from "./chat-model-picker"
+import { useDiscoverChatModel } from "./chat-model-picker"
 import { StageIncompleteBanner } from "./stage-generate-panel"
-import { getRequirementsGenerateBlocker, isDiscoveryComplete } from "@/lib/journey/prerequisites"
+import {
+  getRequirementsGenerateBlocker,
+  isDiscoveryComplete,
+} from "@/lib/journey/prerequisites"
+
+const DEFAULT_CHAT_MODEL = "gemini-2.0-flash"
 
 function textOf(m: UIMessage): string {
   return (m.parts ?? [])
@@ -76,10 +75,9 @@ export function DiscoveryChat() {
   const projectId = bundle.project.id
   const idea = bundle.project.idea
   const savedChat = bundle.project.chat ?? []
-  const { modelId, setModel, models, provider, loading: modelsLoading } =
-    useDiscoverChatModel()
-  const modelIdRef = useRef(modelId)
-  modelIdRef.current = modelId
+  const { modelId, loading: modelsLoading } = useDiscoverChatModel()
+  const modelIdRef = useRef(DEFAULT_CHAT_MODEL)
+  modelIdRef.current = modelId || DEFAULT_CHAT_MODEL
 
   const transport = useMemo(
     () =>
@@ -89,7 +87,7 @@ export function DiscoveryChat() {
           body: {
             messages,
             idea,
-            model: modelIdRef.current || undefined,
+            model: modelIdRef.current,
           },
         }),
       }),
@@ -105,6 +103,7 @@ export function DiscoveryChat() {
   const [input, setInput] = useState("")
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [outputsOpen, setOutputsOpen] = useState(false)
   const seeded = useRef(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const { materials, setMaterials } = useDiscoveryMaterials([])
@@ -113,14 +112,14 @@ export function DiscoveryChat() {
   const showAnalysisPreview = materials.length >= 2
 
   useEffect(() => {
-    if (seeded.current || modelsLoading || !modelId) return
+    if (seeded.current || modelsLoading) return
     if (messages.length > 0 || savedChat.length > 0) {
       seeded.current = true
       return
     }
     seeded.current = true
     sendMessage({ text: idea })
-  }, [messages.length, savedChat.length, idea, sendMessage, modelId, modelsLoading])
+  }, [messages.length, savedChat.length, idea, sendMessage, modelsLoading])
 
   useEffect(() => {
     if (status !== "ready" || messages.length === 0) return
@@ -159,10 +158,15 @@ export function DiscoveryChat() {
   async function generate() {
     const blocker = getRequirementsGenerateBlocker({
       ...bundle,
-      project: { ...bundle.project, chat: messages.map((m) => ({
-        role: m.role === "user" ? "user" as const : "assistant" as const,
-        content: textOf(m),
-      })).filter((m) => m.content.trim()) },
+      project: {
+        ...bundle.project,
+        chat: messages
+          .map((m) => ({
+            role: m.role === "user" ? ("user" as const) : ("assistant" as const),
+            content: textOf(m),
+          }))
+          .filter((m) => m.content.trim()),
+      },
     })
     if (blocker) {
       setError(blocker.message)
@@ -212,28 +216,53 @@ export function DiscoveryChat() {
   }, [messages, busy, showInlineGenerate])
 
   return (
-    <div className="flex w-full min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="shrink-0 space-y-3">
-        <StageHeader stage="discover" />
+    <div className="grid h-full min-h-0 flex-1 grid-rows-[auto_1fr] gap-3">
+      <div className="shrink-0 space-y-2">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <StageHeader stage="discover" />
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              onClick={() => setOutputsOpen((open) => !open)}
+            >
+              {outputsOpen ? (
+                <>
+                  <X className="h-4 w-4" /> Hide outputs
+                </>
+              ) : (
+                <>
+                  <PanelRight className="h-4 w-4" /> Discovery outputs
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={generate}
+              disabled={generating || busy}
+              className="h-9 rounded-full sm:min-w-[11rem]"
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" /> Building Define board…
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" /> Generate requirements
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
         {!discoveryComplete && (
           <StageIncompleteBanner message="Keep chatting with the analyst until you're ready — then generate requirements to unlock Define." />
         )}
+        {error && <p className="text-xs text-alert-text">{error}</p>}
       </div>
-      <div className="grid w-full min-h-0 flex-1 gap-4 overflow-hidden lg:grid-cols-[minmax(0,1fr)_min(18rem,22rem)] lg:gap-6">
-        <div className="flex min-h-[min(60vh,calc(100dvh-18rem))] flex-col overflow-hidden rounded-2xl border border-border bg-card lg:h-full lg:min-h-0">
-          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2.5 sm:px-6">
-            <p className="text-xs text-muted-foreground">
-              Discovery chat · model applies to new messages
-            </p>
-            <ChatModelPicker
-              modelId={modelId}
-              models={models}
-              provider={provider}
-              loading={modelsLoading}
-              disabled={busy}
-              onChange={setModel}
-            />
-          </div>
+
+      <div className="grid min-h-0 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_min(18rem,22rem)]">
+        <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-card">
           <div
             ref={scrollRef}
             className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:space-y-5 sm:p-6"
@@ -247,7 +276,7 @@ export function DiscoveryChat() {
               if (m.role === "user") {
                 return (
                   <div key={m.id} className="flex justify-end">
-                    <div className="max-w-[min(100%,36rem)] rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-sm text-primary-foreground sm:max-w-[85%]">
+                    <div className="max-w-[min(100%,42rem)] rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-sm text-primary-foreground">
                       {text}
                     </div>
                   </div>
@@ -256,7 +285,7 @@ export function DiscoveryChat() {
 
               return (
                 <div key={m.id} className="flex justify-start">
-                  <div className="flex max-w-[min(100%,36rem)] flex-col items-start gap-2 sm:max-w-[85%]">
+                  <div className="flex max-w-[min(100%,42rem)] flex-col items-start gap-2">
                     <div className="rounded-2xl rounded-bl-sm bg-secondary px-4 py-2.5 text-sm leading-relaxed text-foreground">
                       {text || (
                         <span className="inline-flex items-center gap-1 text-muted-foreground">
@@ -265,26 +294,21 @@ export function DiscoveryChat() {
                       )}
                     </div>
                     {showCta && (
-                      <div className="flex w-full flex-col gap-2 pl-1">
-                        <Button
-                          onClick={generate}
-                          disabled={generating}
-                          className="h-10 w-full rounded-full sm:w-auto sm:min-w-[14rem]"
-                        >
-                          {generating ? (
-                            <>
-                              <Loader2 className="h-4 w-4 animate-spin" /> Building Define board…
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="h-4 w-4" /> Generate requirements
-                            </>
-                          )}
-                        </Button>
-                        {error && (
-                          <p className="text-xs text-alert-text">{error}</p>
+                      <Button
+                        onClick={generate}
+                        disabled={generating}
+                        className="h-10 rounded-full sm:min-w-[14rem]"
+                      >
+                        {generating ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" /> Building Define board…
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-4 w-4" /> Generate requirements
+                          </>
                         )}
-                      </div>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -299,7 +323,8 @@ export function DiscoveryChat() {
             )}
             {chatError && (
               <p className="rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-alert-text">
-                {chatError.message || "Chat request failed. Check your API key and restart the dev server."}
+                {chatError.message ||
+                  "Chat request failed. Check your API key and restart the dev server."}
               </p>
             )}
             {showAnalysisPreview && (
@@ -341,42 +366,19 @@ export function DiscoveryChat() {
           </div>
         </div>
 
-        <aside className="flex min-h-0 w-full flex-col gap-4 overflow-y-auto lg:max-h-full">
-          <div className="shrink-0 rounded-2xl border border-border bg-card p-4 sm:p-5">
-            <Button
-              onClick={generate}
-              disabled={generating || busy}
-              className="h-12 w-full rounded-full text-sm font-semibold"
-            >
-              {generating ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Building Define board…
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" /> Generate requirements
-                </>
-              )}
-            </Button>
-            {error && <p className="mt-2 text-xs text-alert-text">{error}</p>}
-          </div>
-
-          <DiscoveryMaterialsPanel
-            materials={materials}
-            onMaterialsChange={setMaterials}
-          />
-          <div className="rounded-2xl border border-border bg-card p-4 sm:p-5">
-            <h3 className="text-base font-semibold tracking-tight">
-              Ready to <span className="serif-accent">move on?</span>
-            </h3>
-            <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-              Turns your chat into a requirements brief and MVP feature cards on
-              the Define board.
-            </p>
-          </div>
-
-          <DiscoveryLearnings requirements={bundle.requirements} />
-        </aside>
+        {(outputsOpen || materials.length > 0) && (
+          <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto lg:max-h-full">
+            {outputsOpen && (
+              <DiscoveryLearnings requirements={bundle.requirements} />
+            )}
+            {materials.length > 0 && (
+              <DiscoveryMaterialsPanel
+                materials={materials}
+                onMaterialsChange={setMaterials}
+              />
+            )}
+          </aside>
+        )}
       </div>
     </div>
   )

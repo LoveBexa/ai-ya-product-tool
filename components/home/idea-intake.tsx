@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useEffect, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { Loader2, Upload } from "lucide-react"
+import { ArrowRight, Loader2, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { createProject } from "@/app/actions/projects"
@@ -26,16 +26,30 @@ const EXAMPLES = [
   },
 ] as const
 
+const MIN_TEXTAREA_HEIGHT = 52
+
 export function IdeaIntake({
   tierUsage,
 }: {
   tierUsage?: TierUsageSnapshot | null
 }) {
   const router = useRouter()
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [idea, setIdea] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const atProjectLimit = tierUsage != null && !tierUsage.canCreateProject
+
+  function adjustTextareaHeight() {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = "auto"
+    el.style.height = `${Math.max(MIN_TEXTAREA_HEIGHT, el.scrollHeight)}px`
+  }
+
+  useEffect(() => {
+    adjustTextareaHeight()
+  }, [idea])
 
   function submit() {
     if (atProjectLimit) return
@@ -62,6 +76,9 @@ export function IdeaIntake({
       <h1 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">
         What&apos;s your <span className="serif-accent">idea?</span>
       </h1>
+      <p className="mt-3 text-center text-sm leading-relaxed text-muted-foreground sm:text-base">
+        AI can write code in minutes. AIYA helps you decide what to build first.
+      </p>
 
       <div className="mt-4 flex flex-wrap justify-center gap-2">
         {EXAMPLES.map((ex) => (
@@ -78,16 +95,17 @@ export function IdeaIntake({
       </div>
 
       <Textarea
+        ref={textareaRef}
         id="idea"
         value={idea}
         onChange={(e) => setIdea(e.target.value)}
         onKeyDown={(e) => {
           if ((e.metaKey || e.ctrlKey) && e.key === "Enter") submit()
         }}
-        rows={3}
-        placeholder="Describe your app, business or product idea."
+        rows={1}
+        placeholder="Describe your idea…"
         disabled={atProjectLimit}
-        className="mt-6 min-h-[7rem] resize-none text-base sm:text-lg"
+        className="mt-6 min-h-[3.25rem] resize-none overflow-hidden text-base leading-relaxed sm:text-lg"
       />
 
       {error && (
@@ -102,10 +120,13 @@ export function IdeaIntake({
         >
           {pending ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" /> Creating…
+              <Loader2 className="h-4 w-4 animate-spin" /> Starting…
             </>
           ) : (
-            "Create Blueprint"
+            <>
+              Start Planning
+              <ArrowRight className="h-4 w-4" />
+            </>
           )}
         </Button>
         <Button
@@ -115,7 +136,7 @@ export function IdeaIntake({
           className="sm:min-w-[11rem]"
           onClick={submit}
         >
-          <Upload className="h-4 w-4" /> Upload Material
+          <Upload className="h-4 w-4" /> Upload Files
         </Button>
       </div>
     </div>
