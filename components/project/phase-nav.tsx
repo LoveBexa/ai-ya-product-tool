@@ -59,7 +59,7 @@ export function PhaseNav({ projectId }: { projectId: string }) {
       </nav>
       {onDefine && mustCount === 0 && (
         <p className="mt-2 text-right text-xs text-muted-foreground">
-          Add at least one Must Have feature before mapping the journey.
+          Add at least one Must Have feature before opening Plan.
         </p>
       )}
     </div>

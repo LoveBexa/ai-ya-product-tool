@@ -1,20 +1,21 @@
 import Link from "next/link"
-import { Sparkles } from "lucide-react"
+import { AiyaLogoIcon } from "@/components/aiya-logo-icon"
 import { cn } from "@/lib/utils"
 
 export function BrandMark({
   href = "/",
   showTagline = true,
   compact = false,
+  dark = false,
   className,
 }: {
   href?: string
   showTagline?: boolean
   compact?: boolean
+  dark?: boolean
   className?: string
 }) {
-  const logoSize = compact ? "h-7 w-7" : "h-8 w-8"
-  const iconSize = compact ? "h-3.5 w-3.5" : "h-4 w-4"
+  const iconSize = compact ? "h-7 w-7" : "h-8 w-8"
   const wordmarkSize = compact
     ? "text-sm leading-none"
     : showTagline
@@ -23,18 +24,17 @@ export function BrandMark({
 
   const content = (
     <>
-      <span
+      <AiyaLogoIcon
         className={cn(
-          "flex shrink-0 items-center justify-center rounded-full bg-mint ring-1 ring-mint/40",
-          logoSize,
+          iconSize,
+          dark ? "text-brand-mark-on-dark" : "text-brand-mark",
         )}
-      >
-        <Sparkles className={cn("text-mint-foreground", iconSize)} />
-      </span>
+      />
       <span className={cn("min-w-0", !showTagline && "flex items-center")}>
         <span
           className={cn(
-            "font-semibold tracking-tight text-foreground",
+            "font-bold tracking-[0.14em]",
+            dark ? "text-white" : "text-foreground",
             showTagline && "block",
             wordmarkSize,
           )}

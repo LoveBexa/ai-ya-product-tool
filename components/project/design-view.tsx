@@ -180,7 +180,7 @@ function RegenerateDesignSection() {
             onClick={() => setConfirming(true)}
             className="inline-flex h-10 shrink-0 items-center justify-center rounded-full border border-border bg-card px-5 text-sm font-medium transition-colors hover:bg-secondary"
           >
-            Re-generate journey map
+            Re-generate plan
           </button>
         </div>
       ) : (
@@ -308,10 +308,10 @@ export function DesignPlaceholder() {
 
   return (
     <StageGeneratePanel
-      title="Preparing your journey"
+      title="Preparing your plan"
       description="User flows and a screen inventory from your must-haves will appear here."
-      actionLabel="Map the journey"
-      generatingLabel="Mapping journey…"
+      actionLabel="Create plan"
+      generatingLabel="Creating plan…"
       generating={generating}
       error={error}
       goBackTo={goBackTo}

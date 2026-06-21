@@ -281,7 +281,7 @@ export function BuildPlan({
         <section className="mb-8 rounded-2xl border border-border bg-card p-5 sm:p-6">
           <h3 className="text-sm font-semibold">2. User flows &amp; screens</h3>
           <p className="mt-1 text-xs text-muted-foreground">
-            From Journey — how people move through the app and which screens each step uses.
+            From Plan — how people move through the app and which screens each step uses.
           </p>
           <div className="mt-4">
             <FlowChain steps={design.user_flow.map((s) => s.label)} />
@@ -303,7 +303,7 @@ export function BuildPlan({
       <section className="mb-8 rounded-2xl border border-border bg-card p-5 sm:p-6">
         <h3 className="text-sm font-semibold">{design ? "3. Schema blueprint" : "2. Schema blueprint"}</h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          Auto-derived from Journey — user flows, screens, and MVP features. This
+          Auto-derived from Plan — user flows, screens, and MVP features. This
           is what you prompt your AI builder with before writing feature code.
         </p>
         {schemaBlueprint ? (
@@ -312,7 +312,7 @@ export function BuildPlan({
           </div>
         ) : (
           <p className="mt-4 rounded-xl border border-dashed border-border bg-secondary/20 px-4 py-6 text-center text-sm text-muted-foreground">
-            Complete Journey first — flows and screens are needed to infer the data
+            Complete Plan first — flows and screens are needed to infer the data
             model.
           </p>
         )}

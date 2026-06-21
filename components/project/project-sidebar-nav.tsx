@@ -35,7 +35,7 @@ const NAV = [
   },
   {
     href: "/design",
-    label: "Journey",
+    label: "Plan",
     step: "3",
     journeyKey: "design" as const,
     icon: Palette,

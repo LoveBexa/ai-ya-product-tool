@@ -32,13 +32,13 @@ export const STOP_LABEL: Record<JourneyStop, string> = {
   overview: "Overview",
   discover: "Discover",
   define: "Features",
-  design: "Journey",
+  design: "Plan",
   execute: "Blueprint",
 }
 
 /** Primary forward action on each step (bottom-right in phase nav). */
 export const NEXT_STEP_CTA: Partial<Record<JourneyStop, string>> = {
-  define: "Map journey",
+  define: "Open Plan",
 }
 
 export function nextStepLabel(from: JourneyStop, to: JourneyStop): string {

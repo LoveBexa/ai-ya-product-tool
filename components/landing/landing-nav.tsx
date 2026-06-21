@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { ArrowRight, Sparkles } from "lucide-react"
+import { ArrowRight } from "lucide-react"
+import { BrandMark } from "@/components/brand-mark"
 import { cn } from "@/lib/utils"
 
 const LINKS = [
@@ -10,25 +11,7 @@ const LINKS = [
 
 function LogoMark({ dark = true, className }: { dark?: boolean; className?: string }) {
   return (
-    <Link
-      href="/"
-      className={cn(
-        "inline-flex items-center gap-2 transition-opacity hover:opacity-90",
-        className,
-      )}
-    >
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint ring-1 ring-mint/40">
-        <Sparkles className="h-4 w-4 text-mint-foreground" />
-      </span>
-      <span
-        className={cn(
-          "text-base font-semibold leading-none tracking-tight",
-          dark ? "text-white" : "text-foreground",
-        )}
-      >
-        AIYA
-      </span>
-    </Link>
+    <BrandMark href="/" showTagline={false} dark={dark} className={className} />
   )
 }
 

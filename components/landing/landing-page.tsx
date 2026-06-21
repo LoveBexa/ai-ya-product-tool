@@ -30,7 +30,7 @@ const PROCESS = [
   },
   {
     step: 3,
-    title: "Journey",
+    title: "Plan",
     body: "Map the experience, flows, screens, and data.",
     icon: LayoutGrid,
     accent: "lilac",

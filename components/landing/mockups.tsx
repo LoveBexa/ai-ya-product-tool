@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils"
 const SIDEBAR = [
   { label: "Chat", icon: MessageCircle, active: false },
   { label: "Features", icon: FileText, active: true },
-  { label: "Journey", icon: LayoutGrid, active: false },
+  { label: "Plan", icon: LayoutGrid, active: false },
   { label: "Blueprint", icon: Code2, active: false },
   { label: "Versions", icon: GitBranch, active: false },
 ]

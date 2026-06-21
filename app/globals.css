@@ -22,6 +22,8 @@
   /* Playful pastel accents */
   --color-mint: var(--mint);
   --color-mint-foreground: var(--mint-foreground);
+  --color-brand-mark: var(--brand-mark);
+  --color-brand-mark-on-dark: var(--brand-mark-on-dark);
   --color-lilac: var(--lilac);
   --color-lilac-foreground: var(--lilac-foreground);
   --color-yellow: var(--yellow);
@@ -81,6 +83,9 @@
   /* Pastel accent family */
   --mint: oklch(0.83 0.13 158);
   --mint-foreground: oklch(0.26 0.05 160);
+  /* Logo mark — vibrant mint, slightly deeper than UI mint */
+  --brand-mark: oklch(0.77 0.125 158);
+  --brand-mark-on-dark: oklch(0.80 0.13 158);
   --lilac: oklch(0.83 0.08 300);
   --lilac-foreground: oklch(0.28 0.05 300);
   --yellow: oklch(0.92 0.12 102);
