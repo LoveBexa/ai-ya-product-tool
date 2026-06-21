@@ -9,7 +9,6 @@ import type { JourneyStop } from "@/lib/journey/navigation"
 import { TierLimitNotice } from "@/components/billing/tier-notice"
 import { useProject } from "./project-context"
 import { StageGeneratePanel } from "./stage-generate-panel"
-import { StageHeader } from "./stage-header"
 
 export function BlueprintPlaceholder() {
   const { bundle, setBundle } = useProject()
@@ -68,8 +67,7 @@ export function BlueprintPlaceholder() {
 
   if (atBlueprintLimit && tierUsage?.blueprintLimitMessage) {
     return (
-      <div className="w-full space-y-4">
-        <StageHeader stage="execute" />
+      <div className="w-full">
         <TierLimitNotice message={tierUsage.blueprintLimitMessage} />
       </div>
     )
@@ -77,7 +75,6 @@ export function BlueprintPlaceholder() {
 
   return (
     <StageGeneratePanel
-      stage="execute"
       title="Your blueprint isn't ready yet"
       description="Pulls together Discover, Define, and Design into one export — spec, flows, schema, foundation prompt, and ordered feature steps."
       actionLabel="Create blueprint"

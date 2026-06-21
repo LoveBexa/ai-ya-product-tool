@@ -4,16 +4,14 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport, type UIMessage } from "ai"
-import { ArrowUp, Loader2, PanelRight, Sparkles, X } from "lucide-react"
+import { ArrowUp, Loader2, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { cn } from "@/lib/utils"
 import type { ChatMessage } from "@/lib/types"
 import { saveChat, finishDiscovery } from "@/app/actions/projects"
 import { useProject } from "./project-context"
 import { formatAiError } from "@/lib/ai/errors"
 import { DiscoveryLearnings } from "./discovery-learnings"
-import { StageHeader } from "./stage-header"
 import {
   DiscoveryMaterialsPanel,
   useDiscoveryMaterials,
@@ -23,8 +21,8 @@ import { DiscoveryAnalysisMessage } from "./discovery-analysis-message"
 import { useDiscoverChatModel } from "./chat-model-picker"
 import {
   getRequirementsGenerateBlocker,
-  isDiscoveryComplete,
 } from "@/lib/journey/prerequisites"
+import { needsOnboarding } from "@/lib/journey/onboarding"
 
 const DEFAULT_CHAT_MODEL = "gemini-2.0-flash"
 
@@ -103,7 +101,6 @@ export function DiscoveryChat() {
   const [input, setInput] = useState("")
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [outputsOpen, setOutputsOpen] = useState(false)
   const seeded = useRef(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const { materials, setMaterials } = useDiscoveryMaterials([])
@@ -209,75 +206,33 @@ export function DiscoveryChat() {
     lastAssistantText.length > 0 &&
     isDiscoveryReadyMessage(lastAssistantText)
 
-  const discoveryComplete = isDiscoveryComplete(bundle)
-
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
   }, [messages, busy, showInlineGenerate])
 
   return (
     <div className="grid h-full min-h-0 flex-1 grid-rows-[auto_1fr] gap-2">
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-          <StageHeader stage="discover" compact />
-          {!discoveryComplete ? (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-yellow/20 px-2 py-0.5 text-[10px] font-medium text-foreground">
-              <span className="h-1.5 w-1.5 rounded-full bg-yellow" aria-hidden />
-              In progress
-            </span>
+      <div className="flex shrink-0 justify-end">
+        <Button
+          onClick={generate}
+          disabled={generating || busy}
+          size="sm"
+          className="h-8 rounded-full sm:min-w-[10rem]"
+        >
+          {generating ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Building…
+            </>
           ) : (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-mint/20 px-2 py-0.5 text-[10px] font-medium text-mint-foreground">
-              <span className="h-1.5 w-1.5 rounded-full bg-mint" aria-hidden />
-              Complete
-            </span>
+            <>
+              <Sparkles className="h-3.5 w-3.5" /> Generate requirements
+            </>
           )}
-        </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-8 rounded-full"
-            onClick={() => setOutputsOpen((open) => !open)}
-          >
-            {outputsOpen ? (
-              <>
-                <X className="h-3.5 w-3.5" /> Hide outputs
-              </>
-            ) : (
-              <>
-                <PanelRight className="h-3.5 w-3.5" /> Outputs
-              </>
-            )}
-          </Button>
-          <Button
-            onClick={generate}
-            disabled={generating || busy}
-            size="sm"
-            className="h-8 rounded-full sm:min-w-[10rem]"
-          >
-            {generating ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Building…
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-3.5 w-3.5" /> Generate requirements
-              </>
-            )}
-          </Button>
-        </div>
+        </Button>
       </div>
       {error && <p className="shrink-0 text-xs text-alert-text">{error}</p>}
 
-      <div
-        className={cn(
-          "grid min-h-0 flex-1 gap-3",
-          outputsOpen || materials.length > 0
-            ? "lg:grid-cols-[minmax(0,1fr)_min(16rem,20rem)]"
-            : "grid-cols-1",
-        )}
-      >
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_min(17rem,20rem)]">
         <div className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card">
           <div
             ref={scrollRef}
@@ -386,19 +341,14 @@ export function DiscoveryChat() {
           </div>
         </div>
 
-        {(outputsOpen || materials.length > 0) && (
-          <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto lg:max-h-full">
-            {outputsOpen && (
-              <DiscoveryLearnings requirements={bundle.requirements} />
-            )}
-            {materials.length > 0 && (
-              <DiscoveryMaterialsPanel
-                materials={materials}
-                onMaterialsChange={setMaterials}
-              />
-            )}
-          </aside>
-        )}
+        <aside className="hidden min-h-0 flex-col gap-3 overflow-y-auto lg:flex">
+          <DiscoveryMaterialsPanel
+            materials={materials}
+            onMaterialsChange={setMaterials}
+            compact
+          />
+          <DiscoveryLearnings requirements={bundle.requirements} compact />
+        </aside>
       </div>
     </div>
   )

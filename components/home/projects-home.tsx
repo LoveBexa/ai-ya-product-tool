@@ -5,11 +5,13 @@ import { TierPlanBadge } from "@/components/billing/tier-notice"
 import { SetupNotice } from "@/components/setup-notice"
 import { cn } from "@/lib/utils"
 import {
+import {
   blueprintProgress,
   blueprintProgressLabel,
-  projectEmoji,
+  resolveProjectEmoji,
   relativeLastEdited,
 } from "@/lib/home/project-card-meta"
+import { projectContinueHref } from "@/lib/journey/onboarding"
 import type { TierUsageSnapshot } from "@/app/actions/billing"
 import type { Project } from "@/lib/types"
 
@@ -69,7 +71,7 @@ export function ProjectsHome({
                             <div className="min-w-0 flex-1">
                               <p className="truncate text-sm font-semibold">
                                 <span aria-hidden className="mr-1.5">
-                                  {projectEmoji(p.title, p.idea)}
+                                  {resolveProjectEmoji(p)}
                                 </span>
                                 {p.title}
                               </p>
@@ -87,7 +89,7 @@ export function ProjectsHome({
                               </div>
                             </div>
                             <Link
-                              href={`/projects/${p.id}`}
+                              href={projectContinueHref(p)}
                               className={cn(
                                 "inline-flex h-8 shrink-0 items-center justify-center rounded-full bg-mint px-3.5 text-sm font-medium text-mint-foreground transition-opacity hover:opacity-90",
                               )}

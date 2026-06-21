@@ -52,7 +52,6 @@ export function DefinePlaceholder() {
 
   return (
     <StageGeneratePanel
-      stage="define"
       title="Your MVP cut isn't ready yet"
       description="Generate requirements from your discovery chat to populate must-have, later, and ignore features."
       actionLabel="Generate requirements"

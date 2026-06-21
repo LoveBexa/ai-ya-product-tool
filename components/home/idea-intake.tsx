@@ -62,7 +62,7 @@ export function IdeaIntake({
     startTransition(async () => {
       try {
         const id = await createProject(value)
-        router.push(`/projects/${id}`)
+        router.push(`/projects/${id}/discover`)
       } catch (e) {
         setError(
           e instanceof Error ? e.message : "Could not start the project.",
@@ -76,11 +76,8 @@ export function IdeaIntake({
       <h1 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">
         What&apos;s your <span className="serif-accent">idea?</span>
       </h1>
-      <p className="mt-3 text-center text-sm leading-relaxed text-muted-foreground sm:text-base">
-        AI can write code in minutes. AIYA helps you plan, ideate and decide on a minimal viable project to ship and test before you build.
-      </p>
 
-      <div className="mt-4 flex flex-wrap justify-center gap-2">
+      <div className="mt-6 flex flex-wrap justify-center gap-2">
         {EXAMPLES.map((ex) => (
           <button
             key={ex.label}

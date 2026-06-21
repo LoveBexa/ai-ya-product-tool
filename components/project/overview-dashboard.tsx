@@ -1,17 +1,19 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowRight, Check, Loader2, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { generateAndSaveCards, updateProjectTitle } from "@/app/actions/projects"
+import { generateAndSaveCards, updateProjectProfile } from "@/app/actions/projects"
 import { getTierUsage, type TierUsageSnapshot } from "@/app/actions/billing"
 import { TierLimitNotice } from "@/components/billing/tier-notice"
 import { getJourneySteps, hasExecutePlan } from "@/lib/journey/status"
 import { PIPELINE_STOPS } from "@/lib/journey/navigation"
 import { useProject } from "./project-context"
+import { DEFAULT_PROJECT_TITLE } from "@/lib/projects/constants"
 import { DeleteProject } from "./delete-project"
+import { ProjectInfoSection } from "./project-info-section"
 import type { StepState } from "@/lib/journey/status"
 
 function pipelineStepState(
@@ -85,49 +87,12 @@ function PipelineStepRow({
   )
 }
 
-function ProjectTitleInput({
-  value,
-  onChange,
-  onSave,
-}: {
-  value: string
-  onChange: (value: string) => void
-  onSave: (value: string) => void
-}) {
-  const ref = useRef<HTMLTextAreaElement>(null)
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    el.style.height = "auto"
-    el.style.height = `${el.scrollHeight}px`
-  }, [value])
-
-  return (
-    <textarea
-      ref={ref}
-      value={value}
-      rows={1}
-      aria-label="Project name"
-      onChange={(e) => onChange(e.target.value)}
-      onBlur={(e) => onSave(e.target.value)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          e.preventDefault()
-          e.currentTarget.blur()
-        }
-      }}
-      className="w-full min-w-0 resize-none overflow-hidden border-0 bg-transparent px-0 py-0 text-2xl font-semibold leading-tight tracking-tight text-foreground outline-none ring-0 focus-visible:ring-0 sm:text-3xl"
-    />
-  )
-}
-
 export function OverviewDashboard() {
   const router = useRouter()
   const { bundle, setBundle } = useProject()
   const projectId = bundle.project.id
   const [generating, setGenerating] = useState(false)
-  const [titleError, setTitleError] = useState<string | null>(null)
+  const [profileError, setProfileError] = useState<string | null>(null)
   const [planError, setPlanError] = useState<string | null>(null)
   const [tierUsage, setTierUsage] = useState<TierUsageSnapshot | null>(null)
 
@@ -147,24 +112,31 @@ export function OverviewDashboard() {
     }
   }, [projectId])
 
-  function patchTitle(title: string) {
+  function patchProject(
+    patch: Partial<{ title: string; description: string; emoji: string }>,
+  ) {
     setBundle((b) => ({
       ...b,
-      project: { ...b.project, title },
+      project: { ...b.project, ...patch },
     }))
   }
 
-  async function saveTitle(title: string) {
-    const trimmed = title.trim() || "Untitled idea"
-    const previous = bundle.project.title
-    patchTitle(trimmed)
-    setTitleError(null)
+  async function saveProfile(
+    fields: Partial<{ title: string; description: string; emoji: string }>,
+  ) {
+    const previous = {
+      title: bundle.project.title,
+      description: bundle.project.description,
+      emoji: bundle.project.emoji,
+    }
+    patchProject(fields)
+    setProfileError(null)
     try {
-      await updateProjectTitle(projectId, trimmed)
+      await updateProjectProfile(projectId, fields)
       router.refresh()
     } catch {
-      patchTitle(previous)
-      setTitleError("Couldn't save name. Try again.")
+      patchProject(previous)
+      setProfileError("Couldn't save changes. Try again.")
     }
   }
 
@@ -195,19 +167,21 @@ export function OverviewDashboard() {
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-4 pb-4 lg:gap-6">
-      <header className="w-full min-w-0">
-        <ProjectTitleInput
-          value={bundle.project.title}
-          onChange={patchTitle}
-          onSave={saveTitle}
-        />
-        {titleError && (
-          <p className="mt-1 text-xs text-alert-text">{titleError}</p>
-        )}
-        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">
-          {bundle.project.idea}
-        </p>
-      </header>
+      <ProjectInfoSection
+        title={bundle.project.title}
+        description={bundle.project.description || bundle.project.idea}
+        emoji={bundle.project.emoji}
+        idea={bundle.project.idea}
+        error={profileError}
+        onTitleChange={(title) => patchProject({ title })}
+        onDescriptionChange={(description) => patchProject({ description })}
+        onEmojiChange={(emoji) => patchProject({ emoji })}
+        onSaveTitle={(title) =>
+          saveProfile({ title: title.trim() || DEFAULT_PROJECT_TITLE })
+        }
+        onSaveDescription={(description) => saveProfile({ description })}
+        onSaveEmoji={(emoji) => saveProfile({ emoji })}
+      />
 
       <section className="w-full min-w-0 rounded-2xl border border-border bg-card p-5 sm:p-6">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">

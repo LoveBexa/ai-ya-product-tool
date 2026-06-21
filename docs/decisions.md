@@ -228,7 +228,9 @@ Chat remains 1 call per message (cannot batch conversation).
 
 **Context:** Users might miss the inline chat button.
 
-**Decision:** **Generate requirements** appears under the ready assistant message AND at top of right sidebar above materials.
+**Decision:** **Generate requirements** appears in the Discover header row AND inline under the ready assistant message (sidebar is materials/outputs only).
+
+**Outcome:** `discovery-chat.tsx` header + inline CTA.
 
 ---
 
@@ -240,11 +242,13 @@ Chat remains 1 call per message (cannot batch conversation).
 
 ---
 
-### ADR-018: Project shell without floating header
+### ADR-018: Project shell navigation
 
-**Context:** Redundant header inside project workspace.
+**Context:** Redundant header inside project workspace; full-width content without nav lost journey context.
 
-**Decision:** AIYA branding in sidebar only; removed floating header inside projects.
+**Decision (evolved):** Top sticky header with AIYA logo + account menu. Desktop left sidebar for journey steps. Mobile bottom journey bar.
+
+**Outcome:** `project-shell.tsx`, `project-sidebar-nav.tsx`, `project-bottom-bar.tsx`, `account-menu.tsx`.
 
 ---
 
@@ -265,6 +269,66 @@ Chat remains 1 call per message (cannot batch conversation).
 **Decision:** Add `--alert-text` CSS token (dark burgundy); use `text-alert-text` on error messages.
 
 **Outcome:** `app/globals.css`. Applied in `StageGeneratePanel`, discovery chat, and generate error surfaces.
+
+---
+
+### ADR-028: Progressive disclosure on Define board
+
+**Context:** Define screen showed problem statement, summary box, tip, column hints, feature titles, multi-line descriptions, and move buttons simultaneously — felt like project-management software, not an AI thinking partner.
+
+**Decision:** Collapse non-primary content; show title-only Kanban cards; open **`FeatureDetailPanel`** drawer on click for description and moves; collapse Discovery summary in `<details>`; replace summary box with one-line counts.
+
+**Outcome:** `define-board.tsx`. Internal field `reasoning` remains the description — hidden on cards, editable in drawer. Drag via grip handle preserved.
+
+---
+
+### ADR-029: Permanent Discover sidebar (desktop)
+
+**Context:** Toggling "Outputs" added chrome; users wanted materials and outputs always visible while chatting.
+
+**Decision:** On `lg+`, right sidebar always shows **Your materials** then **Discovery outputs** — no toggle. Chat stays centered `max-w-xl` in left column.
+
+**Outcome:** `discovery-chat.tsx` grid layout. Mobile: sidebar hidden until a mobile pattern is designed.
+
+---
+
+### ADR-030: Dual navigation — sidebar + bottom bar
+
+**Context:** Full-width content without nav was tried; users lost journey context.
+
+**Decision:** Desktop: left `ProjectSidebarNav`. Mobile: `ProjectBottomBar` journey circles. Shared top header with `AccountMenu`.
+
+**Outcome:** `project-shell.tsx`, `project-sidebar-nav.tsx`, `project-bottom-bar.tsx`. Phase nav still at bottom of main content (except Discover viewport lock).
+
+---
+
+### ADR-031: Compact stage headers
+
+**Context:** Large stage headers consumed vertical space on chat-heavy screens.
+
+**Decision:** Add `compact` prop to `StageHeader` for Discover and Define — single-line title + short subtitle.
+
+**Outcome:** `stage-header.tsx`. Full-size header still used on placeholders and other stages where appropriate.
+
+---
+
+### ADR-032: Plainlang export format
+
+**Context:** Users may want formal spec output for codeplain / ***plain tooling, not only markdown PRD.
+
+**Decision:** Add second export format alongside Blueprint markdown: **Plainlang spec** (`.plain`) assembled from blueprint cards and schema.
+
+**Outcome:** `lib/build-plan/plainlang-export.ts`, `export-formats.ts`. UI format picker + **Copy all** in `build-plan.tsx` export modal.
+
+---
+
+### ADR-033: Temp free-tier project limit for testing
+
+**Context:** Need to test multi-project flows before paid tier exists.
+
+**Decision:** Set `FREE_MAX_PROJECTS = 2` in `lib/billing/tier.ts` with TEMP comment. UI copy and `TIER_MESSAGES` still say 1 project.
+
+**Outcome:** Revert to `1` before public launch; document in project-state and roadmap.
 
 ---
 

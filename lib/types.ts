@@ -15,6 +15,8 @@ export type ProjectStage =
 export interface Project {
   id: string
   title: string
+  description: string
+  emoji: string
   idea: string
   stage: ProjectStage
   chat: ChatMessage[]

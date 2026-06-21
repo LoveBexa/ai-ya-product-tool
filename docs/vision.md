@@ -68,6 +68,10 @@ Handoffs are deliberate:
 
 AIYA does not auto-advance through stages or auto-generate the next stage from phase navigation.
 
+### UX principle (2026)
+
+Each stage should feel like **AI helped me think** — not manual ticket grooming. Prefer fewer visible cards, progressive disclosure, expandable details, and one-line AI summaries over showing every explanation at once.
+
 ---
 
 ## Who it's for
@@ -91,7 +95,7 @@ Today the app persists requirements, features, design, cards, chat, foundation p
 
 To keep the product accessible while payment is built:
 
-- **Free:** 1 project, 1 blueprint (regenerate on the same project is OK)
+- **Free:** UI says 1 project, 1 blueprint (regenerate on the same project is OK). **Temp:** server allows 2 projects for testing — see `lib/billing/tier.ts`.
 - **Paid:** Unlimited (currently env flag `AIYA_BILLING_TIER=paid`; checkout not built)
 
 ---
@@ -107,7 +111,7 @@ Synthesise what founders already have:
 - Sketches and whiteboard photos
 - ChatGPT and Claude conversation exports
 
-The Discover stage already has a **materials panel UI shell** (upload zone, tabs for chat/sketches/drawings). Uploads currently create mock metadata only — AI synthesis is not wired yet.
+The Discover stage already has a **materials panel UI shell** (upload zone, tabs for chat/sketches/drawings). On desktop, **Your materials** and **Discovery outputs** sit permanently beside the chat. Uploads currently create mock metadata only — AI synthesis is not wired yet.
 
 ### Evolve stage
 

@@ -10,6 +10,10 @@ alter table projects add column if not exists chat jsonb not null default '[]'::
 alter table projects add column if not exists foundation_prompt text not null default '';
 alter table projects add column if not exists database_schema text not null default '';
 alter table projects add column if not exists product_design jsonb;
+alter table projects add column if not exists subtitle text not null default '';
+alter table projects add column if not exists emoji text not null default '';
+alter table projects add column if not exists description text not null default '';
+update projects set description = subtitle where description = '' and subtitle <> '';
 
 -- features
 alter table features add column if not exists sort_order int not null default 0;

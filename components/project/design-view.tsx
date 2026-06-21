@@ -10,7 +10,6 @@ import { useProject } from "./project-context"
 import { StageGeneratePanel } from "./stage-generate-panel"
 import { DisclosureSection } from "./disclosure-section"
 import { FlowChain } from "./design-artifacts"
-import { StageHeader } from "./stage-header"
 import { DefineTraceBadge, FlowTraceBadge } from "./design-trace-badges"
 import { SchemaBlueprintPanel } from "./schema-blueprint-panel"
 import { Textarea } from "@/components/ui/textarea"
@@ -192,16 +191,10 @@ export function DesignView({
   schemaBlueprint: SchemaBlueprint
   onScreenPurposeChange?: (screenId: string, purpose: string) => void
 }) {
-  const mustCount = features.filter((f) => f.priority === "must").length
   const editable = Boolean(onScreenPurposeChange)
 
   return (
     <div className="w-full">
-      <StageHeader
-        stage="design"
-        handoffSummary={`${mustCount} MVP decisions — mapped to flows and screens.`}
-      />
-
       <div className="flex flex-col gap-3">
         <DisclosureSection
           title="User flows"
@@ -273,7 +266,6 @@ export function DesignPlaceholder() {
 
   return (
     <StageGeneratePanel
-      stage="design"
       title="Preparing your design"
       description="Flows and a screen inventory from your must-haves will appear here."
       actionLabel="Create design flows"

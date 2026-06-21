@@ -1,5 +1,10 @@
 import type { Project, ProjectStage } from "@/lib/types"
 
+export const PROJECT_EMOJI_PICKS = [
+  "🏠", "🏪", "🍳", "🐕", "🎤", "💪", "💼", "📱", "🎯", "✨",
+  "🚀", "💡", "🛒", "📊", "🎨", "🏥", "✈️", "🎮", "📚", "🔧",
+] as const
+
 export function projectEmoji(title: string, idea: string): string {
   const text = `${title} ${idea}`.toLowerCase()
   if (text.includes("marketplace") || text.includes("shop")) return "🏪"
@@ -10,6 +15,14 @@ export function projectEmoji(title: string, idea: string): string {
   if (text.includes("fitness") || text.includes("coach")) return "💪"
   if (text.includes("freelanc") || text.includes("crm")) return "💼"
   return "🏠"
+}
+
+export function resolveProjectEmoji(
+  project: Pick<Project, "emoji" | "title" | "idea">,
+): string {
+  const stored = project.emoji?.trim()
+  if (stored) return stored
+  return projectEmoji(project.title, project.idea)
 }
 
 export function relativeLastEdited(iso: string): string {

@@ -149,3 +149,18 @@ body {
 .define-card-flash {
   animation: define-card-settle-in 1.15s ease-out both;
 }
+
+@keyframes nav-step-done-in {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.nav-step-done-in {
+  animation: nav-step-done-in 0.4s ease-out both;
+}

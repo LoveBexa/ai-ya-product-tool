@@ -26,7 +26,7 @@ import type {
   CardStatus,
   RequirementsDraft,
 } from "@/lib/types"
-import { DELETE_CONFIRMATION_PHRASE } from "@/lib/projects/constants"
+import { DELETE_CONFIRMATION_PHRASE, DEFAULT_PROJECT_TITLE } from "@/lib/projects/constants"
 import {
   canCreateBlueprint,
   canCreateProject,
@@ -57,13 +57,20 @@ export async function createProject(idea: string): Promise<string> {
   }
 
   const db = getSupabaseAdmin()
-  const title = idea.trim().slice(0, 120) || "Untitled idea"
+  const trimmedIdea = idea.trim()
   const { data, error } = await db
     .from("projects")
-    .insert({ title, idea: idea.trim(), stage: "discovery", chat: [] })
+    .insert({
+      title: DEFAULT_PROJECT_TITLE,
+      description: trimmedIdea,
+      idea: trimmedIdea,
+      stage: "discovery",
+      chat: [],
+    })
     .select("id")
     .single()
   if (error) throw new Error(error.message)
+
   revalidatePath("/")
   revalidatePath("/start")
   return data.id as string
@@ -76,7 +83,12 @@ export async function listProjects(): Promise<Project[]> {
     .select("*")
     .order("created_at", { ascending: false })
   if (error) throw new Error(error.message)
-  return (data ?? []) as Project[]
+  return ((data ?? []) as Project[]).map((row) =>
+    normalizeProjectRow({
+      ...row,
+      chat: Array.isArray(row.chat) ? row.chat : [],
+    }),
+  )
 }
 
 export async function deleteProject(projectId: string, confirmationPhrase: string) {
@@ -92,26 +104,54 @@ export async function deleteProject(projectId: string, confirmationPhrase: strin
   revalidatePath("/")
 }
 
-export async function updateProjectTitle(
+export async function updateProjectProfile(
   projectId: string,
-  title: string,
+  fields: Partial<{ title: string; description: string; emoji: string }>,
 ): Promise<Project> {
-  const trimmed = title.trim().slice(0, 120) || "Untitled idea"
+  const update: Record<string, string> = {}
+  if (fields.title !== undefined) {
+    update.title = fields.title.trim().slice(0, 120) || DEFAULT_PROJECT_TITLE
+  }
+  if (fields.description !== undefined) {
+    update.description = fields.description.trim().slice(0, 2000)
+  }
+  if (fields.emoji !== undefined) {
+    update.emoji = fields.emoji.trim().slice(0, 8)
+  }
+  if (Object.keys(update).length === 0) {
+    throw new Error("Nothing to update")
+  }
+
   const db = getSupabaseAdmin()
   const { data, error } = await db
     .from("projects")
-    .update({ title: trimmed })
+    .update(update)
     .eq("id", projectId)
     .select("*")
     .single()
   if (error) throw new Error(error.message)
   revalidatePath("/start")
   revalidatePath(`/projects/${projectId}`)
+  return normalizeProjectRow(data)
+}
+
+/** @deprecated Use updateProjectProfile */
+export async function updateProjectTitle(
+  projectId: string,
+  title: string,
+): Promise<Project> {
+  return updateProjectProfile(projectId, { title })
+}
+
+function normalizeProjectRow(data: Project & { subtitle?: string }): Project {
+  const row = data as Project & { subtitle?: string }
   return {
-    ...(data as Project),
-    foundation_prompt: (data as Project).foundation_prompt ?? "",
-    database_schema: (data as Project).database_schema ?? "",
-    product_design: (data as Project).product_design ?? null,
+    ...row,
+    description: row.description ?? row.subtitle ?? "",
+    emoji: row.emoji ?? "",
+    foundation_prompt: row.foundation_prompt ?? "",
+    database_schema: row.database_schema ?? "",
+    product_design: row.product_design ?? null,
   }
 }
 
@@ -139,13 +179,10 @@ export async function getProjectBundle(id: string): Promise<ProjectBundle> {
   const design = raw.product_design ?? null
 
   return {
-    project: {
+    project: normalizeProjectRow({
       ...raw,
       chat: Array.isArray(raw.chat) ? raw.chat : [],
-      foundation_prompt: raw.foundation_prompt ?? "",
-      database_schema: raw.database_schema ?? "",
-      product_design: design,
-    },
+    } as Project),
     requirements: (req ?? null) as Requirements | null,
     features: ((features ?? []) as Feature[]).map((f) => ({
       ...f,

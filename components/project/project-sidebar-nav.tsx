@@ -2,21 +2,18 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import {
-  LayoutGrid,
-  MessageCircle,
-  PenTool,
-  Palette,
-  ListChecks,
-} from "lucide-react"
+import { Check, LayoutGrid, MessageCircle, PenTool, Palette, ListChecks } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getJourneySteps, type StepState } from "@/lib/journey/status"
 import { useProject } from "./project-context"
+import { ProjectSwitcher } from "./project-switcher"
 
 const NAV = [
   {
     href: "",
     label: "Overview",
-    step: null,
+    step: null as string | null,
+    journeyKey: null as null,
     icon: LayoutGrid,
     match: /\/projects\/[^/]+$/,
   },
@@ -24,6 +21,7 @@ const NAV = [
     href: "/discover",
     label: "Discover",
     step: "1",
+    journeyKey: "discover" as const,
     icon: MessageCircle,
     match: /\/discover/,
   },
@@ -31,6 +29,7 @@ const NAV = [
     href: "/define",
     label: "Define",
     step: "2",
+    journeyKey: "define" as const,
     icon: PenTool,
     match: /\/define|\/decide/,
   },
@@ -38,6 +37,7 @@ const NAV = [
     href: "/design",
     label: "Design",
     step: "3",
+    journeyKey: "design" as const,
     icon: Palette,
     match: /\/design/,
   },
@@ -45,12 +45,24 @@ const NAV = [
     href: "/execute",
     label: "Blueprint",
     step: "4",
+    journeyKey: "execute" as const,
     icon: ListChecks,
     match: /\/execute|\/build/,
   },
 ] as const
 
-function NavStepBadge({ step, active }: { step: string; active: boolean }) {
+function NavStepBadge({
+  step,
+  active,
+  state,
+}: {
+  step: string
+  active: boolean
+  state: StepState | null
+}) {
+  const done = state === "done"
+  const showCheck = done && !active
+
   if (active) {
     return (
       <span className="relative flex h-7 w-7 shrink-0 items-center justify-center">
@@ -58,15 +70,38 @@ function NavStepBadge({ step, active }: { step: string; active: boolean }) {
           aria-hidden
           className="absolute inset-0 rounded-full border-2 border-mint/50 bg-mint/10 ring-1 ring-mint/25"
         />
-        <span className="relative flex h-[18px] w-[18px] items-center justify-center rounded-full bg-mint text-[9px] font-bold text-mint-foreground">
-          {step}
+        <span className="relative flex h-[18px] w-[18px] items-center justify-center rounded-full bg-mint text-mint-foreground">
+          {done ? (
+            <Check className="h-3 w-3" strokeWidth={2.5} />
+          ) : (
+            <span className="text-[9px] font-bold">{step}</span>
+          )}
         </span>
       </span>
     )
   }
 
+  if (showCheck) {
+    return (
+      <span
+        className={cn(
+          "flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-mint text-mint-foreground nav-step-done-in",
+        )}
+      >
+        <Check className="h-3 w-3" strokeWidth={2.5} />
+      </span>
+    )
+  }
+
   return (
-    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-bold text-muted-foreground">
+    <span
+      className={cn(
+        "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
+        state === "current"
+          ? "bg-mint/25 text-mint-foreground ring-1 ring-mint/40"
+          : "bg-secondary text-muted-foreground",
+      )}
+    >
       {step}
     </span>
   )
@@ -98,7 +133,8 @@ function NavIconBadge({
 
 export function ProjectSidebarNav() {
   const pathname = usePathname()
-  const { bundle } = useProject()
+  const { bundle, projects } = useProject()
+  const journey = getJourneySteps(bundle)
   const base = `/projects/${bundle.project.id}`
 
   function isActive(match: RegExp) {
@@ -108,14 +144,12 @@ export function ProjectSidebarNav() {
   return (
     <aside className="hidden w-56 shrink-0 flex-col border-r border-border bg-card/40 lg:flex">
       <div className="border-b border-border p-4">
-        <p className="truncate text-sm font-semibold">{bundle.project.title}</p>
-        <p className="mt-0.5 truncate text-xs text-muted-foreground">
-          Your journey
-        </p>
+        <ProjectSwitcher projects={projects} current={bundle.project} />
       </div>
       <nav className="flex flex-1 flex-col gap-1 p-3">
-        {NAV.map(({ href, label, step, icon: Icon, match }) => {
+        {NAV.map(({ href, label, step, journeyKey, icon: Icon, match }) => {
           const active = isActive(match)
+          const state = journeyKey ? journey[journeyKey] : null
 
           return (
             <Link
@@ -130,7 +164,7 @@ export function ProjectSidebarNav() {
               )}
             >
               {step ? (
-                <NavStepBadge step={step} active={active} />
+                <NavStepBadge step={step} active={active} state={state} />
               ) : (
                 <NavIconBadge icon={Icon} active={active} />
               )}

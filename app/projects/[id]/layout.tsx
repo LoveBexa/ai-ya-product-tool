@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation"
 import { AppShell } from "@/components/app-shell"
 import { ProjectProvider } from "@/components/project/project-context"
-import { ProjectShell } from "@/components/project/project-shell"
+import { ProjectLayoutGate } from "@/components/project/project-layout-gate"
 import { isSupabaseConfigured } from "@/lib/supabase/server"
-import { getProjectBundle } from "@/app/actions/projects"
+import { getProjectBundle, listProjects } from "@/app/actions/projects"
 
 /** AI server actions (blueprint, design, etc.) can run 30–60s. */
 export const maxDuration = 60
@@ -31,8 +31,12 @@ export default async function ProjectLayout({
   }
 
   let bundle
+  let projects
   try {
-    bundle = await getProjectBundle(id)
+    ;[bundle, projects] = await Promise.all([
+      getProjectBundle(id),
+      listProjects(),
+    ])
   } catch (e) {
     if (e instanceof Error && /not found/i.test(e.message)) {
       notFound()
@@ -42,8 +46,8 @@ export default async function ProjectLayout({
 
   return (
     <AppShell showHeader={false}>
-      <ProjectProvider initial={bundle}>
-        <ProjectShell>{children}</ProjectShell>
+      <ProjectProvider initial={bundle} projects={projects}>
+        <ProjectLayoutGate>{children}</ProjectLayoutGate>
       </ProjectProvider>
     </AppShell>
   )

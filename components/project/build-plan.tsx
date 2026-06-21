@@ -12,7 +12,6 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { StageHeader } from "./stage-header"
 import { CardDetail } from "./card-detail"
 import {
   generateAndSaveFoundationPrompt,
@@ -201,13 +200,7 @@ export function BuildPlan({
 
   return (
     <div className="w-full">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 flex-1">
-          <StageHeader
-            stage="execute"
-            handoffSummary="Design complete — flows, screens, and schema assembled into your exportable blueprint."
-          />
-        </div>
+      <div className="mb-6 flex justify-end">
         <Button
           type="button"
           className="shrink-0 rounded-full"

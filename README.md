@@ -57,6 +57,8 @@ The end goal is a **blueprint** — not code. A blueprint you can trust before y
 
 Each stage shows an empty state with a generate button until you run that stage's AI step. Define → Design is a link only; design generation happens on the Design page.
 
+The UI favours **progressive disclosure** — compact Kanban cards on Define, collapsible discovery context, and a focused chat layout — so you see summaries first and details when you choose.
+
 ### Coming soon (vision)
 
 Import the messy stuff you've already created and let AIYA synthesise it:
@@ -147,7 +149,8 @@ lib/
   billing/              # Free/paid tier limits
   design/               # Schema blueprint derivation from Design artifacts
   journey/              # Stage navigation, prerequisites, status
-  build-plan/           # Blueprint markdown export
+  build-plan/           # Blueprint markdown + Plainlang (.plain) export
+  home/                 # Start page project card helpers
 scripts/
   schema.sql            # Full Supabase schema
   migrations/           # Idempotent migrations for existing DBs

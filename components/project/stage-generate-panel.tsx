@@ -3,11 +3,8 @@
 import Link from "next/link"
 import { ChevronLeft, Loader2 } from "lucide-react"
 import { projectPath, STOP_LABEL, type JourneyStop } from "@/lib/journey/navigation"
-import type { PipelineStageId } from "@/lib/journey/navigation"
-import { StageHeader } from "./stage-header"
 
 export function StageGeneratePanel({
-  stage,
   title,
   description,
   actionLabel,
@@ -18,7 +15,6 @@ export function StageGeneratePanel({
   projectId,
   onAction,
 }: {
-  stage: PipelineStageId
   title: string
   description: string
   actionLabel: string
@@ -31,7 +27,6 @@ export function StageGeneratePanel({
 }) {
   return (
     <div className="w-full">
-      <StageHeader stage={stage} />
       <div className="rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center sm:p-12">
         <p className="text-sm font-medium">{title}</p>
         <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">

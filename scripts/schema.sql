@@ -10,6 +10,8 @@
 create table if not exists projects (
   id          uuid primary key default gen_random_uuid(),
   title       text not null,
+  description text not null default '',
+  emoji       text not null default '',
   idea        text not null,
   stage       text not null default 'discovery'
               check (stage in ('discovery','requirements','mvp','tasks')), -- NEW
