@@ -114,7 +114,7 @@ export function LandingPage() {
             </div>
           </div>
 
-          <div className="mx-auto mt-12 max-w-4xl sm:mt-16">
+          <div id="what-you-get" className="mx-auto mt-12 max-w-4xl scroll-mt-28 sm:mt-16 sm:scroll-mt-24">
             <DefineAppMockup />
           </div>
         </section>

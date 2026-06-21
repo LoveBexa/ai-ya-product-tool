@@ -4,7 +4,7 @@ import { BrandMark } from "@/components/brand-mark"
 import { cn } from "@/lib/utils"
 
 const LINKS = [
-  { href: "#how-it-works", label: "What you get" },
+  { href: "#what-you-get", label: "What you get" },
   { href: "#how-it-works", label: "How it works" },
   { href: "#why-aiya", label: "Why AIYA" },
 ]
